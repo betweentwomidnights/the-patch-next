@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: black;
+}
+
+
+.App {
+  @apply w-screen h-screen relative overflow-hidden bg-black;
+}
+
+.particles-image {
+  @apply fixed top-0 left-0 w-screen h-screen z-10;
+}
+
+.play-pause-button {
+  @apply absolute z-50 bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-white border border-white rounded-lg px-4 py-2;
+}
+
+.play-pause-button button {
+  @apply w-full h-full bg-transparent border-none text-inherit p-0 m-0 z-50;
+}
+
+.change-image-button {
+  @apply fixed right-10 top-1/2 transform -translate-y-1/2 bg-black border border-white rounded-full px-2.5 cursor-pointer z-40;
+  transition: transform 0.3s ease-in-out;
+}
+
+.change-image-button:active {
+  transform: scale(0.9) translateY(-50%);
+}
+
+.expandable-about-button {
+  @apply fixed bottom-0 left-0 w-12 h-12 flex flex-col items-start justify-end bg-black text-white z-20;
+  transform-origin: bottom right;
+}
+
+.social-media-button-group {
+  @apply fixed top-0 left-5 z-20;
+}
+
+.switch-stream-button {
+  @apply fixed bottom-10 right-10 z-30 bg-black text-white border border-white rounded-lg px-2.5;
+}
+
+.volume-slider {
+  @apply absolute bottom-5 left-1/2 transform -translate-x-1/2 w-36 bg-black text-white border border-white rounded-lg px-2;
+  /* Use calc in CSS because Tailwind doesn't support it */
+  inset-inline-start: calc(50% + 120px);
+}
+
+.volume-slider input[type="range"] {
+  @apply w-full h-3.5 bg-gray-300 outline-none opacity-70;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.volume-slider input[type="range"]::-webkit-slider-thumb {
+  @apply w-6 h-6 bg-white cursor-pointer rounded-lg;
+}
+
+.volume-slider input[type="range"]::-moz-range-thumb {
+  @apply w-6 h-6 bg-white cursor-pointer rounded-lg;
+}
+
+.Dashboard {
+  @apply relative w-screen h-screen;
+}
+
+.Home {
+  @apply absolute inset-0 w-screen h-screen;
+}
+

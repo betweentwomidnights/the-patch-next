@@ -1,0 +1,35 @@
+{
+  "name": "the-patch-next",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@react-spring/web": "^9.7.3",
+    "@react-three/fiber": "^8.13.4",
+    "@types/node": "20.4.0",
+    "@types/react": "18.2.14",
+    "@types/react-dom": "18.2.6",
+    "autoprefixer": "10.4.14",
+    "buffer": "^6.0.3",
+    "eslint": "8.44.0",
+    "eslint-config-next": "^13.4.8",
+    "next": "^13.4.8",
+    "postcss": "8.4.24",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.10.1",
+    "react-joyride": "^2.5.4",
+    "standardized-audio-context": "^25.3.54",
+    "tailwindcss": "3.3.2",
+    "three": "^0.154.0",
+    "typescript": "5.1.6"
+  },
+  "devDependencies": {
+    "@types/three": "^0.153.0"
+  }
+}
