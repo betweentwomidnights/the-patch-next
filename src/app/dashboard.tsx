@@ -1,15 +1,20 @@
 //  /app/page.tsx
 'use client'; // This line marks this file as a Client Component
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, Suspense } from 'react';
 import { AudioContext, IAnalyserNode } from 'standardized-audio-context';
 import PlayPauseButton from './components/PlayPauseButton';
 import SwitchStreamButton from './components/SwitchStreamButton';
 import ExpandableAboutButton from './components/ExpandableAboutButton';
 import SocialMediaButtonGroup from './components/SocialButtons';
 import Intro from './components/Intro';
-import Home from './home';
+import ChangeChannelButton from './components/ChangeChannelButton';
+
+
 import useAudioSpectrumAnalyzer from './hooks/useAudioSpectrumAnalyzer';
+
+const Home = React.lazy(() => import('./home'));
+const Shaders = React.lazy(() => import('./shaders'));
 
 const Dashboard: React.FC = () => {
   
@@ -26,6 +31,12 @@ const Dashboard: React.FC = () => {
   const [isPlayPauseClicked, setIsPlayPauseClicked] = useState<boolean>(false);
   const [isChangeImageClicked, setIsChangeImageClicked] = useState<boolean>(false);
   const [isSwitchStreamClicked, setIsSwitchStreamClicked] = useState<boolean>(false);
+
+  const [currentChannel, setCurrentChannel] = useState('home'); // Add a state variable to maintain current channel
+
+  const handleChannelChange = () => { // Add a method to handle channel change
+    setCurrentChannel(prevChannel => prevChannel === 'home' ? 'shaders' : 'home');
+  };
 
   const steps = [
     {
@@ -44,6 +55,9 @@ const Dashboard: React.FC = () => {
       advanceOn: '.switch-stream-button',
     },
   ];
+
+  
+
 
   return (
     <div className="Dashboard">
@@ -81,11 +95,18 @@ const Dashboard: React.FC = () => {
       />
       <ExpandableAboutButton />
       <SocialMediaButtonGroup />
-      <Home 
-        spectrumData={spectrumData} 
-        isChangeImageClicked={isChangeImageClicked} 
-        setIsChangeImageClicked={setIsChangeImageClicked} 
-      />
+      <ChangeChannelButton onClick={handleChannelChange} /> {/* Include the ChangeChannelButton component */}
+      <Suspense fallback={<div>Loading...</div>}>
+        {currentChannel === 'home' ? ( // Conditionally render Home or Shaders based on currentChannel
+          <Home 
+            spectrumData={spectrumData} 
+            isChangeImageClicked={isChangeImageClicked} 
+            setIsChangeImageClicked={setIsChangeImageClicked} 
+          />
+        ) : (
+          <Shaders spectrumData={spectrumData} />
+        )}
+      </Suspense>
     </div>
   );
 }

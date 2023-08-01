@@ -64,13 +64,13 @@ const useAnimatedParticles = ({
         }
 
         const direction = new THREE.Vector3(...position).normalize();
-        const speed = 0.2;
+        const speed = 0.4;
 
         const offset = audioIntensity / 255;
         const movement = [
-          (initialPosition[0] + initialPosition[0] * offset - position[0]) * .4,
-          (initialPosition[1] + initialPosition[1] * offset - position[1]) * .4,
-          (initialPosition[2] + initialPosition[2] * offset - position[2]) * .4  
+          (initialPosition[0] + initialPosition[0] * offset - position[0]) * .8,
+          (initialPosition[1] + initialPosition[1] * offset - position[1]) * .8,
+          (initialPosition[2] + initialPosition[2] * offset - position[2]) * .8  
         ];
 
         switch (animationStateRef.current) {

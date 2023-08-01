@@ -9,26 +9,10 @@ import ChangeImageButton from './components/ChangeImageButton';
 
 
 const imageUrls = [
-  '/b2mcoverspotify.png', 
-  '/skellington.png', 
-  '/escalator.png', 
-  '/escalator2.png', 
-  '/mom3.png', 
-  '/mom4.png', 
-  '/geopat1.jpg', 
-  '/geopat2.jpg', 
-  '/geopat3.jpg', 
-  '/geopat4.jpg', 
-  '/watch1.jpg',
-  '/watch2.jpg',
-  '/mom20.jpg',
-  '/mom21.jpg',
-  '/mom22.jpg',
-  '/mom23.jpg',
-  '/mom24.jpg',
-  '/mom25.jpg',
-  '/mom26.jpg',
-  '/mom27.jpg',
+  '/b2mcover_tilesextrudeweb.webp',
+  '/b2mcover_tilesextrudezoomedgeweb.webp',
+  '/b2mcover_yellowweb.webp',
+  '/b2mcover_tilesweb.webp',
 ];
 
 function getRandomImageUrl(currentImageUrl: string | null): string {
@@ -62,7 +46,7 @@ interface HomeProps {
       startTransition(() => {
         setImageUrl(prevImageUrl => getRandomImageUrl(prevImageUrl));
       });
-    }, 500);
+    }, 100);
   };
   
   useEffect(() => {
@@ -95,7 +79,7 @@ interface HomeProps {
           texture={texture} 
           fallbackTexture={fallbackTexture} 
           spectrumData={spectrumData} 
-          gridCount={40}
+          gridCount={50}
           isLoadingImage={isLoadingImage}
           isTransitioningOut={isTransitioningOut}
           setIsTransitioningOut={setIsTransitioningOut}
