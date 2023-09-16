@@ -2,7 +2,7 @@ import React from 'react';
 import { FaTwitter, FaDiscord, FaYoutube, FaTwitch } from 'react-icons/fa';
 
 const SocialMediaButtonGroup = () => {
-  const twitterURL = "https://twitter.com/wrechno";
+  const twitterURL = "https://twitter.com/thepatch_kev";
   const discordURL = "https://discord.gg/thecollabagepatch";
   const youtubeURL = "https://www.youtube.com/channel/UCmDU9oCSFwbNokxM1Wi_FWA";
   const twitchURL = "https://www.twitch.tv/thecollabagepatch";

@@ -1,4 +1,4 @@
-//  /app/page.tsx
+//  /app/dashboard.tsx
 'use client'; // This line marks this file as a Client Component
 
 import React, { useState, useRef, Suspense } from 'react';

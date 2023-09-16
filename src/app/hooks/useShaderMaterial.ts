@@ -1,5 +1,4 @@
-import { ShaderMaterial, Texture, Vector2, Vector3 } from 'three';
-import { extend, useThree, useFrame } from '@react-three/fiber';
+import { ShaderMaterial, Texture, Vector2 } from 'three';
 import { useEffect, useRef } from 'react';
 
 interface UseShaderMaterialProps {
@@ -16,41 +15,15 @@ const useShaderMaterial = ({
   fragmentShader,
 }: UseShaderMaterialProps) => {
   const textureRef = useRef(texture);
-  const mouse = useThree((state) => state.mouse); // get mouse from three-fiber
-  const materialRef = useRef<any>();
 
-  extend({
-    ShaderMaterial: class extends ShaderMaterial {
-      constructor() {
-        super({
-          uniforms: {
-            map: { value: fallbackTexture },
-            uvOffset: { value: new Vector2(0, 0) },
-            uvScale: { value: new Vector2(1, 1) },
-            mousePosition: { value: new Vector3(mouse.x, mouse.y, 0) }, // new uniform for mouse position
-          },
-          vertexShader,
-          fragmentShader,
-        });
-      }
-    },
-  });
-
-  // Create an instance of ShaderMaterial and keep reference to it
-  materialRef.current = new ShaderMaterial({
+  const material = new ShaderMaterial({
     uniforms: {
       map: { value: fallbackTexture },
-      uvOffset: { value: new Vector2(0, 0) },
-      uvScale: { value: new Vector2(1, 1) },
-      mousePosition: { value: new Vector3(mouse.x, mouse.y, 0) },
+      uvOffset: { value: new Vector2(0, 0) },  // Default values; can be modified as needed
+      uvScale: { value: new Vector2(1, 1) },  // Default values; can be modified as needed
     },
     vertexShader,
     fragmentShader,
-  });
-
-  useFrame(() => {
-    // Update mousePosition uniform on each frame
-    materialRef.current.uniforms.mousePosition.value.set(mouse.x, mouse.y, 0);
   });
 
   useEffect(() => {
@@ -66,9 +39,8 @@ const useShaderMaterial = ({
   return {
     uniforms: {
       map: { value: textureRef.current ? textureRef.current : fallbackTexture },
-      uvOffset: { value: new Vector2(0, 0) },
-      uvScale: { value: new Vector2(1, 1) },
-      mousePosition: { value: new Vector3(mouse.x, mouse.y, 0) }, // return mousePosition uniform
+      uvOffset: { value: new Vector2(0, 0) }, // Ensure we return uvOffset
+      uvScale: { value: new Vector2(1, 1) },  // Ensure we return uvScale
     },
     vertexShader,
     fragmentShader,

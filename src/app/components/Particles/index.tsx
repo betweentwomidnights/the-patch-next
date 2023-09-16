@@ -14,20 +14,11 @@ extend({ Raycaster });
 const vertexShader = `
 uniform vec2 uvOffset;
 uniform vec2 uvScale;
-uniform vec3 mousePosition; // add mousePosition uniform
 varying vec2 vUv;
 
 void main() {
   vUv = uv * uvScale + uvOffset;
-
-  // calculate the displacement based on the distance to mouse position
-  float distanceToMouse = distance(position, mousePosition);
-  float displacement = sin(distanceToMouse * 10.0) * 0.1; // adjust the multiplier for different displacement intensity
-
-  // add the displacement to the position
-  vec3 displacedPosition = position + normalize(position - mousePosition) * displacement * 1.0; // Increase the displacement by multiplying it by a larger number
-
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(displacedPosition, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;
 
@@ -73,7 +64,6 @@ interface ParticlePointsProps {
       particles,
       spectrumData, 
       uniforms: shaderMaterial?.uniforms, 
-      isLoadingImage, 
       isTransitioningOut, 
       setIsTransitioningOut,
       isPending 
@@ -86,23 +76,13 @@ interface ParticlePointsProps {
     }, [texture, shaderMaterial]);
   
     useFrame(() => {
-      if (groupRef.current && spectrumData && shaderMaterial?.uniforms?.map?.value) {
-        // Calculate the average intensity
-        const averageIntensity = spectrumData.reduce((sum, intensity) => sum + intensity, 0) / spectrumData.length;
-        const scaledIntensity = averageIntensity / 255;
-    
-        groupRef.current.scale.set(1 + scaledIntensity, 1 + scaledIntensity, 1 + scaledIntensity);
-        
-        // Raycast checking
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(meshRefs.current);
-        if (intersects.length > 0) {
-          setHoveredMesh(intersects[0].object as THREE.Mesh);
-        } else {
-          setHoveredMesh(null);
-        }
-      } 
-    });
+    if (groupRef.current && spectrumData && shaderMaterial?.uniforms?.map?.value) {
+      // Calculate the average intensity
+      const averageIntensity = spectrumData.reduce((sum, intensity) => sum + intensity, 0) / spectrumData.length;
+      const scaledIntensity = averageIntensity / 255;
+      groupRef.current.scale.set(1 + scaledIntensity, 1 + scaledIntensity, 1 + scaledIntensity);
+    } 
+  });
 
     useEffect(() => {
       if (hoveredMesh) {
@@ -131,17 +111,17 @@ interface ParticlePointsProps {
           const uvScale = [1 / gridCount, 1 / gridCount];
           return (
             <mesh key={idx} position={particle.position as [number, number, number]} ref={(ref) => ref && (meshRefs.current[idx] = ref)}>
-              <planeGeometry attach="geometry" args={[1 / (gridCount - 1), 1 / (gridCount - 1)]} />
-              <shaderMaterial
-                attach="material"
-                uniforms={{ ...shaderMaterial.uniforms, uvOffset: { value: new THREE.Vector2(...uvOffset) }, uvScale: { value: new THREE.Vector2(...uvScale) } }}
-                vertexShader={vertexShader}
-                fragmentShader={fragmentShader}
-                transparent={true}
-                blending={THREE.NormalBlending}
-                depthTest={true}
-              />
-            </mesh>
+      <planeGeometry attach="geometry" args={[1 / (gridCount - 1), 1 / (gridCount - 1)]} />
+      <shaderMaterial
+        attach="material"
+        uniforms={{ ...shaderMaterial.uniforms, uvOffset: { value: new THREE.Vector2(...uvOffset) }, uvScale: { value: new THREE.Vector2(...uvScale) } }}
+        vertexShader={vertexShader}
+        fragmentShader={fragmentShader}
+        transparent={true}
+        blending={THREE.NormalBlending}
+        depthTest={true}
+      />
+    </mesh>
           );
         })}
       </group>

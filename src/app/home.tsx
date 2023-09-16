@@ -1,4 +1,4 @@
-// src/app/R3F/page.tsx
+// src/app/home.tsx
 'use client'; // This line marks this file as a Client Component
 
 import React, { useState, useRef, useEffect, useTransition } from 'react';
@@ -9,10 +9,23 @@ import ChangeImageButton from './components/ChangeImageButton';
 
 
 const imageUrls = [
-  '/b2mcover_tilesextrudeweb.webp',
-  '/b2mcover_tilesextrudezoomedgeweb.webp',
-  '/b2mcover_yellowweb.webp',
-  '/b2mcover_tilesweb.webp',
+  '/astrokitty.webp',
+  '/geopat4.webp',
+  '/geopat3.webp',
+  '/geopat2.webp',
+  '/kavinsky1.webp',
+  '/kavisnky2.webp',
+  '/kavisnky3.webp',
+  '/kavisnky4.webp',
+  '/kavisnky5.webp',
+  '/mom1.webp',
+  '/mom2.webp',
+  '/mom3.webp',
+  '/mom4.webp',
+  '/mom5.webp',
+  '/mom6.webp',
+  '/skellington.webp',
+  '/b2mcoverspotify.webp',
 ];
 
 function getRandomImageUrl(currentImageUrl: string | null): string {

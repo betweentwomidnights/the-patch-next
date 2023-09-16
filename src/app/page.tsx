@@ -1,11 +1,26 @@
 // /app/page.tsx
-import dynamic from 'next/dynamic';
+'use client';
+import React, { Suspense, useState } from 'react';
+import Landing from './Landing';
 
-const Dashboard = dynamic(
-  () => import('./dashboard'),
-  { ssr: false }
-)
+// Lazy-load the Dashboard
+const Dashboard = React.lazy(() => import('./dashboard'));
 
 export default function Page() {
-  return <Dashboard />
+  const [showDashboard, setShowDashboard] = useState(false);
+
+  return (
+    <div>
+      {!showDashboard && (
+        <Landing onDashboardClick={() => setShowDashboard(true)} />
+      )}
+
+      {showDashboard && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <Dashboard />
+        </Suspense>
+      )}
+    </div>
+  );
 }
+

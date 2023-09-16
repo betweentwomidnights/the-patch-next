@@ -12,6 +12,13 @@ interface SwitchStreamButtonProps {
   setIsSwitchStreamClicked: (isSwitchStreamClicked: boolean) => void;
 }
 
+const streamUrls = {
+  playlist: 'https://thecollabagepatch.com/playlist.mp3',
+  yikesawjeez: 'https://thecollabagepatch.com/yikesawjeez.mp3',
+  audiocraft: 'https://thecollabagepatch.com/audiocraft.mp3',
+  kemp: 'https://thecollabagepatch.com/kemp.mp3' // Added this new mount-point
+}
+
 const SwitchStreamButton: React.FC<SwitchStreamButtonProps> = ({
   setAudioContext,
   setAnalyser,
@@ -22,45 +29,45 @@ const SwitchStreamButton: React.FC<SwitchStreamButtonProps> = ({
   analyser,
   setIsSwitchStreamClicked
 }) => {
-  
+
   const [currentStream, setCurrentStream] = useState('playlist');
 
-  const switchStream = () => {
-    setIsSwitchStreamClicked(true);
-    if (audioContext && analyser) {
-        audioContext.suspend().then(() => {
-            // Switch the stream
-            if (currentStream === 'playlist') {
-              setStreamUrl('https://thecollabagepatch.com/yikesawjeez.mp3');
-              setCurrentStream('yikesawjeez');
-            } else {
-              setStreamUrl('https://thecollabagepatch.com/playlist.mp3');
-              setCurrentStream('playlist');
-            }
-        
-            setIsPlaying(false);
-        
-            if (audioRef.current) {
-              audioRef.current.load(); // Load new source into audio element
-            }
-        })
-        .then(() => audioContext.resume()) // Wait for new source to load, then resume
-        .then(() => {
-            if (audioRef.current) {
-              audioRef.current.play(); // Directly call play method on audioRef.current
-            }
-        })
-        .then(() => setIsPlaying(true)) // Set isPlaying to true after audio context is resumed
-        .catch((error) => {
-            console.error('Error switching streams:', error);
-        });
-        
+  const switchStream = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  setIsSwitchStreamClicked(true);
+  const newStream = event.target.value as keyof typeof streamUrls; // Type assertion
+  
+  const updateStream = () => {
+    setStreamUrl(streamUrls[newStream]);
+    setCurrentStream(newStream);
+  
+    if (audioRef.current) {
+      audioRef.current.load(); // Load new source into audio element
     }
-  };
+  }
+
+  if (audioContext && analyser) {
+    audioContext.suspend().then(() => {
+      updateStream();
+      return audioContext.resume(); // Wait for new source to load, then resume
+    })
+    .then(() => {
+      if (audioRef.current) {
+        audioRef.current.play(); // Directly call play method on audioRef.current
+      }
+    })
+    .then(() => setIsPlaying(true)) // Set isPlaying to true after audio context is resumed
+    .catch((error) => {
+      console.error('Error switching streams:', error);
+    });
+  } else {
+    // If audioContext and analyser are not initialized, just update the stream.
+    updateStream();
+  }
+};
 
   return (
     <div className="switch-stream-button">
-      <button onClick={switchStream} style={{
+      <select onChange={switchStream} style={{
         position: 'absolute',
         right: 0,
         bottom: 0,
@@ -71,8 +78,11 @@ const SwitchStreamButton: React.FC<SwitchStreamButtonProps> = ({
         padding: '8px 16px',
         margin: '12px',
       }}>
-        {currentStream === 'playlist' ? 'AI Music' : 'Collabages'}
-      </button>
+        <option value="playlist">collabages /playlist.mp3</option>
+        <option value="yikesawjeez">the yikes stream /yikesawjeez.mp3</option>
+        <option value="audiocraft">gary and kev /audiocraft.mp3</option>
+        <option value="kemp">dj sets by chris hrtz /kemp.mp3</option> {/* Added this new option */}
+      </select>
     </div>
   );
 };

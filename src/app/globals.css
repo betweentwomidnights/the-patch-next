@@ -48,8 +48,15 @@ body {
 }
 
 .expandable-about-button {
-  @apply fixed bottom-0 left-0 w-12 h-12 flex flex-col items-start justify-end bg-black text-white z-20;
+  @apply fixed bottom-0 left-0 w-12 h-12 overflow-y-auto border border-white rounded-xl bg-black z-20;
   transform-origin: bottom right;
+  padding-bottom: 50px; /* equal to the height of your arrow buttons */
+}
+
+.fixed-arrows {
+  position: fixed;
+  bottom: 0;
+  left: 0;
 }
 
 .social-media-button-group {
@@ -60,25 +67,21 @@ body {
   @apply fixed bottom-10 right-10 z-30 bg-black text-white border border-white rounded-lg px-2.5;
 }
 
-.volume-slider {
-  @apply absolute bottom-5 left-1/2 transform -translate-x-1/2 w-36 bg-black text-white border border-white rounded-lg px-2;
-  /* Use calc in CSS because Tailwind doesn't support it */
-  inset-inline-start: calc(50% + 120px);
+.switch-stream-button select {
+  position: absolute;
+  right: 0;
+  bottom: 100%; /* This ensures the dropdown starts from bottom of the button and goes up */
+  background-color: black;
+  color: white;
+  border: 1px solid white;
+  border-radius: 12px;
+  padding: 8px 16px;
+  margin-bottom: 12px; /* Add space at the bottom */
+  -webkit-appearance: none; /* This is to remove default browser styling for select */
+  -moz-appearance: none;
+  appearance: none;
 }
 
-.volume-slider input[type="range"] {
-  @apply w-full h-3.5 bg-gray-300 outline-none opacity-70;
-  -webkit-transition: .2s;
-  transition: opacity .2s;
-}
-
-.volume-slider input[type="range"]::-webkit-slider-thumb {
-  @apply w-6 h-6 bg-white cursor-pointer rounded-lg;
-}
-
-.volume-slider input[type="range"]::-moz-range-thumb {
-  @apply w-6 h-6 bg-white cursor-pointer rounded-lg;
-}
 
 .Dashboard {
   @apply relative w-screen h-screen;
@@ -100,3 +103,52 @@ body {
 .shaders {
   @apply w-screen h-screen;
 }
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: black;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #555;
+}
+
+/* General scrollbar button styling */
+::-webkit-scrollbar-button {
+  display: block;
+  background-color: white;
+  width: 8px; /* Adjust to match your scrollbar width */
+  height: 8px; /* Adjust to your preferred arrow button height */
+}
+
+/* Up arrow */
+::-webkit-scrollbar-button:start:decrement {
+  background-image: linear-gradient(to bottom, transparent, transparent, white 50%, transparent, transparent);
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Down arrow */
+::-webkit-scrollbar-button:end:increment {
+  background-image: linear-gradient(to bottom, transparent, transparent, white 50%, transparent, transparent);
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.iframe-placeholder {
+  height: 152px; /* Assuming this is the height of your iframes */
+  background-color: #eee; /* A light gray placeholder color */
+  border: 1px solid #ddd;
+  margin: 5px 0; /* Some spacing around each placeholder */
+}
+
