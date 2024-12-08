@@ -13,10 +13,12 @@ interface SwitchStreamButtonProps {
 }
 
 const streamUrls = {
+  captains_chair: 'https://thecollabagepatch.com/captains_chair.mp3',
+  infinitepolo: 'https://thecollabagepatch.com/infinitepolo.mp3',
   playlist: 'https://thecollabagepatch.com/playlist.mp3',
   yikesawjeez: 'https://thecollabagepatch.com/yikesawjeez.mp3',
   audiocraft: 'https://thecollabagepatch.com/audiocraft.mp3',
-  kemp: 'https://thecollabagepatch.com/kemp.mp3' // Added this new mount-point
+  kemp: 'https://thecollabagepatch.com/kemp.mp3'
 }
 
 const SwitchStreamButton: React.FC<SwitchStreamButtonProps> = ({
@@ -30,7 +32,7 @@ const SwitchStreamButton: React.FC<SwitchStreamButtonProps> = ({
   setIsSwitchStreamClicked
 }) => {
 
-  const [currentStream, setCurrentStream] = useState('playlist');
+  const [currentStream, setCurrentStream] = useState('infinitepolo');
 
   const switchStream = (event: React.ChangeEvent<HTMLSelectElement>) => {
   setIsSwitchStreamClicked(true);
@@ -78,10 +80,12 @@ const SwitchStreamButton: React.FC<SwitchStreamButtonProps> = ({
         padding: '8px 16px',
         margin: '12px',
       }}>
+        <option value="captains_chair">captain&apos;s chair /captains_chair.mp3</option>
+        <option value="infinitepolo">the infinite remix /infinitepolo.mp3</option>
         <option value="playlist">collabages /playlist.mp3</option>
         <option value="yikesawjeez">the yikes stream /yikesawjeez.mp3</option>
         <option value="audiocraft">gary and kev /audiocraft.mp3</option>
-        <option value="kemp">dj sets by chris hrtz /kemp.mp3</option> {/* Added this new option */}
+        <option value="kemp">dj sets by chris hrtz /kemp.mp3</option>
       </select>
     </div>
   );
