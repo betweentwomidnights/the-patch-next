@@ -1,18 +1,13 @@
 import * as THREE from 'three';
 import React, { useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, SoftShadows } from '@react-three/drei';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import { KernelSize } from 'postprocessing';
 import Perlin from './Perlin';
 
-const BOX_COUNT_PER_SIDE = 12;
-const FREQUENCY_BANDS = 4;
-
-interface ShadersProps {
-  spectrumData: Uint8Array;
-  isAudioInitialized?: boolean;
-}
+const BOX_COUNT_PER_SIDE = 12; // Slightly increased for more detail
+const FREQUENCY_BANDS = 4; // We'll split the spectrum into bass, low-mid, high-mid, treble
 
 const Background = () => {
   const { scene } = useThree();
@@ -20,6 +15,7 @@ const Background = () => {
   return null;
 };
 
+// Helper function to split frequency data into bands
 const getFrequencyBands = (spectrumData: Uint8Array) => {
   if (!spectrumData.length) return [0, 0, 0, 0];
   
@@ -43,6 +39,7 @@ const Boxes = ({ spectrumData }: { spectrumData: Uint8Array }) => {
   const { camera } = useThree();
   const noise = new Perlin();
 
+  // Create persistent arrays for smooth transitions
   const positionArrays = useMemo(() => ({
     current: new Float32Array(BOX_COUNT_PER_SIDE ** 3 * 3),
     target: new Float32Array(BOX_COUNT_PER_SIDE ** 3 * 3)
@@ -60,14 +57,17 @@ const Boxes = ({ spectrumData }: { spectrumData: Uint8Array }) => {
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
     
+    // Get frequency bands
     const [bass, lowMid, highMid, treble] = getFrequencyBands(spectrumData);
     
+    // Normalize the frequencies
     const normalizedBass = bass / 255;
     const normalizedLowMid = lowMid / 255;
     const normalizedHighMid = highMid / 255;
     const normalizedTreble = treble / 255;
 
-    const baseHue = (time * 0.05) % 1;
+    // Color based on frequency spectrum
+    const baseHue = (time * 0.05) % 1; // Slowly shifting base hue
     const color = new THREE.Color();
     color.setHSL(
       (baseHue + normalizedLowMid * 0.2) % 1,
@@ -76,6 +76,7 @@ const Boxes = ({ spectrumData }: { spectrumData: Uint8Array }) => {
     );
     (meshRef.current.material as THREE.MeshPhongMaterial).color = color;
 
+    const center = new THREE.Vector3(0, 0, 0);
     const halfSide = BOX_COUNT_PER_SIDE / 2;
 
     for (let x = 0; x < BOX_COUNT_PER_SIDE; x++) {
@@ -83,13 +84,16 @@ const Boxes = ({ spectrumData }: { spectrumData: Uint8Array }) => {
         for (let z = 0; z < BOX_COUNT_PER_SIDE; z++) {
           const i = x * BOX_COUNT_PER_SIDE * BOX_COUNT_PER_SIDE + y * BOX_COUNT_PER_SIDE + z;
           
+          // Base position
           const baseX = x - halfSide;
           const baseY = y - halfSide;
           const baseZ = z - halfSide;
 
+          // Create layered movement
           const distance = Math.sqrt(baseX * baseX + baseY * baseY + baseZ * baseZ);
           const normalizedDistance = distance / (Math.sqrt(3) * halfSide);
 
+          // Perlin noise movement
           const noiseScale = 0.15;
           const noiseTime = time * 0.5;
           const noiseFactor = noise.simplex3(
@@ -98,38 +102,45 @@ const Boxes = ({ spectrumData }: { spectrumData: Uint8Array }) => {
             z * noiseScale + noiseTime
           );
 
+          // Frequency-based transformations
           const bassInfluence = Math.sin(distance - time * 2) * normalizedBass * 2;
           const midInfluence = Math.cos(distance - time) * normalizedHighMid;
           
+          // Calculate position
           dummy.position.set(
             baseX + noiseFactor * normalizedLowMid + bassInfluence,
             baseY + noiseFactor * normalizedHighMid + midInfluence,
             baseZ + noiseFactor * normalizedTreble
           );
 
+          // Scale based on bass and distance
           const scale = 0.7 + 
             Math.sin(normalizedDistance * Math.PI + time) * 0.2 * normalizedBass +
             normalizedTreble * 0.3;
           dummy.scale.setScalar(scale);
 
+          // Rotation influenced by mid frequencies
           dummy.rotation.set(
             normalizedLowMid * Math.PI * normalizedDistance,
             normalizedHighMid * Math.PI * 2 * normalizedDistance,
             normalizedTreble * Math.PI * normalizedDistance
           );
 
+          // Apply smooth transitions for positions
           const idx = i * 3;
           for (let j = 0; j < 3; j++) {
             positionArrays.current[idx + j] = positionArrays.current[idx + j] + 
               (dummy.position.toArray()[j] - positionArrays.current[idx + j]) * 0.1;
           }
 
+          // Handle rotations separately since they're Euler angles
           const currentRotation = new THREE.Euler(
             dummy.rotation.x,
             dummy.rotation.y,
             dummy.rotation.z
           );
 
+          // Smooth transition for each rotation axis
           rotationArrays.current[idx] = rotationArrays.current[idx] + 
             (currentRotation.x - rotationArrays.current[idx]) * 0.1;
           rotationArrays.current[idx + 1] = rotationArrays.current[idx + 1] + 
@@ -193,10 +204,7 @@ const CenterLight = ({ spectrumData }: { spectrumData: Uint8Array }) => {
   return <pointLight ref={lightRef} position={[0, 0, 0]} color="#fff" />;
 };
 
-const Shaders: React.FC<ShadersProps> = ({ 
-  spectrumData, 
-  isAudioInitialized = false 
-}) => {
+const Shaders: React.FC<{ spectrumData: Uint8Array }> = ({ spectrumData }) => {
   return (
     <div className="shaders">
       <Canvas 
