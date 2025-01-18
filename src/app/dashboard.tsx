@@ -1,46 +1,55 @@
 'use client'; // This line marks this file as a Client Component
 
 import React, { useState, useRef, Suspense, useEffect } from 'react';
-import { AudioContext, IAnalyserNode } from 'standardized-audio-context';
+import { detectIOS } from './utils/detectIOS'; // Ensure the path to detectIOS is correct
 import PlayPauseButton from './components/PlayPauseButton';
 import SwitchStreamButton from './components/SwitchStreamButton';
 import ExpandableAboutButton from './components/ExpandableAboutButton';
 import SocialMediaButtonGroup from './components/SocialButtons';
 import Intro from './components/Intro';
 import ChangeChannelButton from './components/ChangeChannelButton';
-
-import useAudioSpectrumAnalyzer from './hooks/useAudioSpectrumAnalyzer';
+import useHybridAudioAnalyzer from './hooks/useAudioSpectrumAnalyzer';
 
 const Home = React.lazy(() => import('./home'));
 const Shaders = React.lazy(() => import('./shaders'));
-
-// Import the Gary component
 const Gary = React.lazy(() => import('./gary'));
 
-const Dashboard: React.FC<{ initialComponent: 'shaders' | 'home' | 'gary' }> = ({ initialComponent }) => {
+interface DashboardProps {
+  initialComponent: 'shaders' | 'home' | 'gary';
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [streamUrl, setStreamUrl] = useState<string>('https://thecollabagepatch.com/captains_chair.mp3');
+  const [streamUrl, setStreamUrl] = useState<string>('/api/streams/captains_chair.mp3');
+
+  // Use native AudioContext and AnalyserNode types
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
-  const [analyser, setAnalyser] = useState<IAnalyserNode<AudioContext> | null>(null);
-  const spectrumData = useAudioSpectrumAnalyzer({ audioContext, analyser, isPlaying });
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+  const [fftWorkletNode, setFftWorkletNode] = useState<AudioWorkletNode | null>(null);
+
+  const spectrumData = useHybridAudioAnalyzer({
+    audioRef,
+    audioContext,
+    analyser,
+    isPlaying,
+    fftWorkletNode,
+    fftSize: 2048
+  });
+
   const [run, setRun] = useState<boolean>(false);
   const [isPlayPauseClicked, setIsPlayPauseClicked] = useState<boolean>(false);
   const [isChangeImageClicked, setIsChangeImageClicked] = useState<boolean>(false);
   const [isSwitchStreamClicked, setIsSwitchStreamClicked] = useState<boolean>(false);
 
-  // State for managing active component
   const [activeComponent, setActiveComponent] = useState<'shaders' | 'home' | 'gary'>(initialComponent);
 
-  const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-  // React to changes in initialComponent prop to adjust active component accordingly
   useEffect(() => {
     setActiveComponent(initialComponent);
   }, [initialComponent]);
 
   const handleChannelChange = () => {
-    setActiveComponent(prevComponent => prevComponent === 'shaders' ? 'home' : 'shaders');
+    setActiveComponent(prevComponent => (prevComponent === 'shaders' ? 'home' : 'shaders'));
   };
 
   const steps = [
@@ -63,23 +72,27 @@ const Dashboard: React.FC<{ initialComponent: 'shaders' | 'home' | 'gary' }> = (
 
   return (
     <div className={`Dashboard ${activeComponent === 'gary' ? 'gary-page-active' : ''}`}>
-      {/* Conditionally Render the Background Video for Gary Page */}
       {activeComponent === 'gary' && (
         <div className="absolute inset-0 z-0">
-          <video 
-        autoPlay 
-        loop 
-        muted 
-        playsInline 
-        className="fixed top-0 left-0 w-full h-full object-cover z-0" 
-        style={{ filter: 'brightness(0.3)' }} // Optional darken effect for readability
-      >
-        <source src="gary_blw_compressed.mp4" type="video/mp4" />
-      </video>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="fixed top-0 left-0 w-full h-full object-cover z-0"
+            style={{ filter: 'brightness(0.3)' }}
+          >
+            <source src="gary_blw_compressed.mp4" type="video/mp4" />
+          </video>
         </div>
       )}
 
-      <audio ref={audioRef} src={streamUrl} crossOrigin="anonymous" />
+<audio
+  ref={audioRef}
+  crossOrigin="anonymous"
+  src={streamUrl}
+  controls={false}
+/>
 
       <Intro
         steps={steps}
@@ -102,6 +115,8 @@ const Dashboard: React.FC<{ initialComponent: 'shaders' | 'home' | 'gary' }> = (
         setAnalyser={setAnalyser}
         isPlaying={isPlaying}
         setIsPlaying={setIsPlaying}
+        fftWorkletNode={fftWorkletNode}
+        setFftWorkletNode={setFftWorkletNode}
       />
 
       <SwitchStreamButton
@@ -137,17 +152,17 @@ const Dashboard: React.FC<{ initialComponent: 'shaders' | 'home' | 'gary' }> = (
           />
         )}
         {activeComponent === 'gary' && (
-    <Gary
-      setStreamUrl={setStreamUrl}
-      setIsPlaying={setIsPlaying}
-      setAudioContext={setAudioContext}
-      setAnalyser={setAnalyser}
-      audioRef={audioRef}
-      audioContext={audioContext}
-      analyser={analyser}
-      setIsSwitchStreamClicked={setIsSwitchStreamClicked}
-    />
-  )}
+          <Gary
+            setStreamUrl={setStreamUrl}
+            setIsPlaying={setIsPlaying}
+            setAudioContext={setAudioContext}
+            setAnalyser={setAnalyser}
+            audioRef={audioRef}
+            audioContext={audioContext}
+            analyser={analyser}
+            setIsSwitchStreamClicked={setIsSwitchStreamClicked}
+          />
+        )}
       </Suspense>
     </div>
   );

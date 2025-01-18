@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub, faTwitter } from '@fortawesome/free-brands-svg-icons';
 import StatusIndicator from './StatusIndicator';  // Import the status indicator component
 import useIsSafari from './hooks/useIsSafari';
-import { AudioContext, IAnalyserNode } from 'standardized-audio-context';
+
 import WaitlistModal from './WaitlistModal';
 
 // Lazy load the YouTubeDemo component
@@ -15,10 +15,10 @@ interface GaryPageProps {
   setStreamUrl: (url: string) => void;
   setIsPlaying: (isPlaying: boolean) => void;
   setAudioContext: (audioContext: AudioContext) => void;
-  setAnalyser: (analyser: IAnalyserNode<AudioContext>) => void;
+  setAnalyser: (analyser: AnalyserNode) => void;
   audioRef: React.RefObject<HTMLAudioElement>;
   audioContext: AudioContext | null;
-  analyser: IAnalyserNode<AudioContext> | null;
+  analyser: AnalyserNode | null;
   setIsSwitchStreamClicked: (isSwitchStreamClicked: boolean) => void;
 }
 

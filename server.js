@@ -1,9 +1,11 @@
 const express = require('express');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const next = require('next');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 const fs = require('fs');
 const path = require('path');
+const { Readable } = require('stream');
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -42,6 +44,58 @@ app.prepare().then(async () => {
 
     server.use(express.json({ limit: '100mb' }));
     server.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+    // Define streams configuration
+    const STREAMS = [
+        'captains_chair.mp3',
+        'infinitepolo.mp3',
+        'playlist.mp3',
+        'audiocraft.mp3',
+        'kemp.mp3',
+        'yikesawjeez.mp3'
+    ];
+
+    // Create proxy routes for each stream
+    STREAMS.forEach(streamName => {
+        server.get(`/api/streams/${streamName}`, createProxyMiddleware({
+            target: 'http://localhost:8000',
+            changeOrigin: true,
+            pathRewrite: {
+                [`^/api/streams/${streamName}`]: `/${streamName}`
+            },
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            }
+        }));
+    });
+
+    // Special handler for Safari users accessing the clusterfuck stream
+    server.get('/api/safari-streams/clusterfuck', async (req, res) => {
+        try {
+            const ffmpeg = spawn('ffmpeg', [
+                '-i', 'rtsp://localhost:8554/clusterfuck',
+                '-c:a', 'copy',
+                '-f', 'mp3',
+                'pipe:1'
+            ]);
+    
+            res.setHeader('Content-Type', 'audio/mpeg');
+            ffmpeg.stdout.pipe(res);
+    
+            ffmpeg.stderr.on('data', (data) => {
+                console.log(`FFmpeg log: ${data}`);
+            });
+    
+            req.on('close', () => {
+                ffmpeg.kill();
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            res.redirect('/api/streams/captains_chair.mp3');
+        }
+    });
 
     server.post('/api/generate', async (req, res) => {
         try {
