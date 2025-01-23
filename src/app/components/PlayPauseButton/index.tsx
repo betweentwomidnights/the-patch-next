@@ -1,5 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { detectIOS } from '../../utils/detectIOS';
+
+interface StreamState {
+  folder: string;
+  file: string;
+  startTime: number;
+  duration: number;
+  currentPosition: number;
+  timestamp: number;
+  listeners: number;
+}
 
 interface PlayPauseButtonProps {
   isPlaying: boolean;
@@ -12,6 +21,7 @@ interface PlayPauseButtonProps {
   setAnalyser: (value: AnalyserNode) => void;
   fftWorkletNode: AudioWorkletNode | null;
   setFftWorkletNode: (node: AudioWorkletNode) => void;
+  streamInfo: StreamState | null;
 }
 
 const PlayPauseButton: React.FC<PlayPauseButtonProps> = ({
@@ -24,164 +34,126 @@ const PlayPauseButton: React.FC<PlayPauseButtonProps> = ({
   setAudioContext,
   setAnalyser,
   fftWorkletNode,
-  setFftWorkletNode
+  setFftWorkletNode,
+  streamInfo,
 }) => {
   const [firstPlay, setFirstPlay] = useState(true);
-  const isIOS = detectIOS();
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const previousTrackRef = useRef<string | null>(null);
 
+  // Track change effect
   useEffect(() => {
-    if (!audioRef.current) return;
+    if (!streamInfo || !audioRef.current) return;
 
-    const handlePlaying = () => {
-      setIsPlaying(true);
-      onPlayPause(true);
-    };
+    const currentTrack = `${streamInfo.folder}/${streamInfo.file}`;
+    if (previousTrackRef.current && previousTrackRef.current !== currentTrack) {
+      console.log('Track changed:', currentTrack);
+      
+      // Update audio source if needed
+      const currentSource = audioRef.current.src;
+      const expectedSource = `/api/audio/${streamInfo.folder}/${streamInfo.file}`;
+      if (!currentSource.endsWith(expectedSource)) {
+        audioRef.current.src = expectedSource;
+      }
 
-    const handlePause = () => {
-      if (!isPlaying) setIsPlaying(false);
-      onPlayPause(false);
-    };
+      // Maintain play state through track change
+      if (isPlaying) {
+        audioRef.current.play().catch(console.error);
+      }
+    }
+    previousTrackRef.current = currentTrack;
+  }, [streamInfo, audioRef, isPlaying]);
 
-    audioRef.current.addEventListener('play', handlePlaying);
-    audioRef.current.addEventListener('pause', handlePause);
+  // Synchronization effect
+  useEffect(() => {
+    if (!streamInfo || !audioRef.current) return;
 
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.removeEventListener('play', handlePlaying);
-        audioRef.current.removeEventListener('pause', handlePause);
+    const syncPlayback = () => {
+      const serverTime = streamInfo.timestamp;
+      const localTime = Date.now();
+      const timeOffset = (localTime - serverTime) / 1000;
+      let adjustedPosition = streamInfo.currentPosition + timeOffset;
+
+      if (adjustedPosition >= streamInfo.duration) {
+        adjustedPosition = adjustedPosition % streamInfo.duration;
+      }
+
+      // Only adjust if the difference is significant
+      if (Math.abs(audioRef.current!.currentTime - adjustedPosition) > 1) {
+        console.log('Syncing playback position to:', adjustedPosition);
+        audioRef.current!.currentTime = adjustedPosition;
       }
     };
-  }, [audioRef, onPlayPause, isPlaying, setIsPlaying]);
+
+    // Sync periodically
+    const syncInterval = setInterval(syncPlayback, 5000);
+    
+    // Initial sync
+    syncPlayback();
+
+    return () => clearInterval(syncInterval);
+  }, [streamInfo, audioRef]);
+
+  // Audio context initialization
+  const initializeAudioContext = async () => {
+    if (!audioRef.current || !streamInfo) return;
+
+    console.log('Initializing AudioContext...');
+    const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+    if (context.state === 'suspended') {
+      await context.resume();
+    }
+
+    const analyserNode = context.createAnalyser();
+    const source = context.createMediaElementSource(audioRef.current);
+    source.connect(analyserNode).connect(context.destination);
+
+    try {
+      await context.audioWorklet.addModule('/worklet/fft-processor.js');
+      const fftNode = new AudioWorkletNode(context, 'fft-processor');
+      source.connect(fftNode).connect(context.destination);
+      setFftWorkletNode(fftNode);
+    } catch (error) {
+      console.error('Error initializing AudioWorkletNode:', error);
+    }
+
+    setAudioContext(context);
+    setAnalyser(analyserNode);
+  };
 
   const handlePlay = async () => {
-    console.log('handlePlay called', {
-      firstPlay,
-      hasAudioRef: !!audioRef.current,
-      currentPlaybackState: audioRef.current?.paused ? 'paused' : 'playing'
-    });
-
-    if (!audioRef.current) return;
+    if (!audioRef.current || !streamInfo) return;
 
     if (firstPlay) {
-      console.log('Initializing first play with new native AudioContext');
-      // Use native AudioContext for maximum compatibility with AudioWorklet
-      const context = new (window.AudioContext || (window as any).webkitAudioContext)();
-
-      // Resume the context on user gesture (required by iOS Safari)
-      if (context.state === 'suspended') {
-        console.log('Context is suspended, attempting resume...');
-        await context.resume();
-        console.log('Context state after resume:', context.state);
-      }
-
-      console.log('Creating audio nodes after resume');
-      const analyserNode = context.createAnalyser();
-      const source = context.createMediaElementSource(audioRef.current);
-
-      // Connect source → analyser → destination by default
-      source.connect(analyserNode).connect(context.destination);
-
-      if (isIOS) {
-        console.log('iOS detected, using AudioWorkletNode');
-        try {
-          // Check for AudioWorklet support
-          if (!context.audioWorklet) {
-            throw new Error('AudioWorklet not supported in this environment.');
-          }
-
-          // Load the AudioWorklet processor code
-          await context.audioWorklet.addModule('/worklet/fft-processor.js');
-
-          // Create the AudioWorkletNode
-          const fftNode = new AudioWorkletNode(context, 'fft-processor');
-
-          // Re-route the audio to pass through the fftNode:
-
-          // Attempt channel configuration
-          fftNode.channelCount = source.channelCount;
-          fftNode.channelCountMode = 'explicit';
-          fftNode.channelInterpretation = 'discrete';
-
-
-          
-          source.connect(fftNode).connect(context.destination);
-          
-          //fftNode.connect(analyserNode);
-          //analyserNode.connect(context.destination);
-
-          setFftWorkletNode(fftNode);
-          console.log('AudioWorkletNode setup completed successfully.');
-        } catch (e) {
-          console.error('Failed to load or initialize AudioWorkletNode:', e);
-        }
-      } else {
-        console.log('Non-iOS platform, no worklet needed');
-      }
-
-      setAudioContext(context);
-      setAnalyser(analyserNode);
+      await initializeAudioContext();
       setFirstPlay(false);
+    }
 
-      console.log('Loading audio element');
-      audioRef.current.load();
-
-      try {
-        await audioRef.current.play();
-        console.log('Audio started playing', {
-          currentTime: audioRef.current?.currentTime,
-          duration: audioRef.current?.duration,
-          contextState: context.state
-        });
-        setIsPlaying(true);
-        onPlayPause(true);
-      } catch (error) {
-        console.error('Error playing audio:', {
-          error,
-          contextState: context.state,
-          audioElementReadyState: audioRef.current?.readyState
-        });
-      }
-
-    } else {
-      // Subsequent plays: just resume if needed and then play
-      if (audioContext && audioContext.state === 'suspended') {
-        console.log('Resuming audio context on subsequent play');
-        await audioContext.resume();
-        console.log('Context resumed:', audioContext.state);
-      }
-
-      try {
-        await audioRef.current.play();
-        console.log('Audio resumed', {
-          currentTime: audioRef.current?.currentTime,
-          duration: audioRef.current?.duration
-        });
-        setIsPlaying(true);
-        onPlayPause(true);
-      } catch (error) {
-        console.error('Error resuming audio:', {
-          error,
-          audioElementReadyState: audioRef.current?.readyState
-        });
-      }
+    try {
+      await audioRef.current.play();
+      setIsPlaying(true);
+      onPlayPause(true);
+    } catch (error) {
+      console.error('Error starting audio playback:', error);
     }
   };
 
   const handlePause = () => {
-    console.log('handlePause called');
     if (audioRef.current) {
       audioRef.current.pause();
-      console.log('Audio paused');
       setIsPlaying(false);
       onPlayPause(false);
     }
   };
 
   return (
-    <div className="play-pause-button" onClick={isPlaying ? handlePause : handlePlay}>
-      <button>{isPlaying ? 'Pause' : 'Play'}</button>
+    <div className="play-pause-button">
+      <button 
+    onClick={isPlaying ? handlePause : handlePlay}
+    className="w-full h-full bg-transparent border-none text-inherit p-0 m-0 z-50 transition-colors duration-300 hover:text-gray-500"
+  >
+    {isPlaying ? 'Pause' : 'Play'}
+  </button>
     </div>
   );
 };

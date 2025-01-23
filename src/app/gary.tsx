@@ -12,7 +12,7 @@ const YouTubeDemo = lazy(() => import('./youtube-demo'));
 
 
 interface GaryPageProps {
-  setStreamUrl: (url: string) => void;
+  
   setIsPlaying: (isPlaying: boolean) => void;
   setAudioContext: (audioContext: AudioContext) => void;
   setAnalyser: (analyser: AnalyserNode) => void;
@@ -23,7 +23,7 @@ interface GaryPageProps {
 }
 
 const GaryPage: React.FC<GaryPageProps> = ({
-  setStreamUrl,
+  
   setIsPlaying,
   setAudioContext,
   setAnalyser,
@@ -37,7 +37,7 @@ const GaryPage: React.FC<GaryPageProps> = ({
   const [showWaitlistModal, setShowWaitlistModal] = useState(false);
   const isSafari = useIsSafari(); // Check if it's Safari
   // Handle the stream switch
-  const handleSwitchToAudiocraft = async () => {
+  /* const handleSwitchToAudiocraft = async () => {
     try {
       setIsSwitchStreamClicked(true);
   
@@ -76,7 +76,7 @@ const GaryPage: React.FC<GaryPageProps> = ({
     } catch (error) {
       console.error('Error switching streams or playing audio:', error);
     }
-  };  
+  };   */
 
   return (
     <div className="relative z-10 text-white pt-20 md:pt-10 pb-32 px-4 mx-auto max-w-4xl mb-16">
@@ -230,7 +230,7 @@ const GaryPage: React.FC<GaryPageProps> = ({
               gary started out as a python script that used bpm detection to choose sections of a full song to continue from, and then stitch them together into a (not very) seamless piece of music.
             </p>
             {/* New stream switcher */}
-            <p className="mt-4">
+            {/* <p className="mt-4">
               hear the early python script in action at the{' '}
               <span
                 className="underline cursor-pointer hover:text-gray-400"
@@ -239,7 +239,7 @@ const GaryPage: React.FC<GaryPageProps> = ({
                 /audiocraft.mp3
               </span>{' '}
               stream.
-            </p>
+            </p> */}
             <a href="https://colab.research.google.com/drive/10CMvuI6DV_VPS0uktbrOB8jBQ7IhgDgL" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline mb-4">
               <FontAwesomeIcon icon={faGithub} /> colab notebook
             </a>

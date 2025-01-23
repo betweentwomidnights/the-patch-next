@@ -349,4 +349,14 @@ body {
     gap: 10px; /* Space between buttons */
     justify-items: center; /* Center buttons in the grid */
   }
+   .fixed.bottom-10.left-10 {
+    bottom: 20px; /* Move up slightly on mobile */
+    left: 50%; /* Center horizontally */
+    transform: translateX(-50%); /* Center adjustment */
+  }
+
+  /* Make the card slightly smaller on mobile */
+  .fixed.bottom-10.left-10 .w-64 {
+    width: 16rem; /* Slightly smaller width */
+  }
 }

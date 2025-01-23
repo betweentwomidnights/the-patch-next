@@ -1,172 +1,144 @@
 import { useState, useEffect, useRef } from 'react';
 import type { FFTProcessor } from '../lib/wasm/fft_wasm';
-import { detectIOS } from '../utils/detectIOS';
+import { initializeWasm } from '../lib/wasm/wasm-init';
 
 interface UseHybridAudioAnalyzerProps {
   audioRef: React.RefObject<HTMLAudioElement>;
   audioContext: AudioContext | null;
-  analyser: AnalyserNode | null;
   fftWorkletNode?: AudioWorkletNode | null;
   isPlaying: boolean;
   fftSize?: number;
 }
 
+interface AudioWorkletMessage {
+  buffer: Float32Array;
+  timeStamp: number;
+}
+
+interface SpectrumDataWithTime {
+  magnitudes: Uint8Array;
+  timeStamp: number;
+  deltaTime: number;
+}
+
 const useHybridAudioAnalyzer = ({
   audioRef,
   audioContext,
-  analyser,
   fftWorkletNode,
   isPlaying,
   fftSize = 2048
-}: UseHybridAudioAnalyzerProps): Uint8Array => {
-  const [spectrumData, setSpectrumData] = useState(new Uint8Array(fftSize / 2));
-  const isIOS = useRef(detectIOS());
+}: UseHybridAudioAnalyzerProps) => {
+  const [spectrumData, setSpectrumData] = useState<SpectrumDataWithTime>({
+    magnitudes: new Uint8Array(fftSize / 2),
+    timeStamp: 0,
+    deltaTime: 0
+  });
+  
   const fftProcessorRef = useRef<FFTProcessor | null>(null);
-
-  // Buffers and counters for iOS FFT processing
-  const timeBufferRef = useRef(new Float32Array(fftSize * 2));
-  const bufferIndexRef = useRef(0);
+  const complexBufferRef = useRef(new Float32Array(fftSize * 2));
   const frameCountRef = useRef(0);
+  const frameRequestRef = useRef<number>();
+  const frameCallbackRef = useRef<(timestamp: number) => void>();
 
-  // Generate default spectrum for when audio data is unavailable
-  const generateDefaultSpectrum = () => {
-    const time = Date.now() / 1000;
-    return new Uint8Array(fftSize / 2).map((_, i) => {
-      const normalizedIndex = i / (fftSize / 2);
-      
-      if (normalizedIndex < 0.25) {
-        // Bass frequencies - slow, strong pulses
-        return Math.floor((Math.sin(time * 0.5) * 0.5 + 0.5) * 255);
-      } else if (normalizedIndex < 0.5) {
-        // Low-mids - medium speed waves
-        return Math.floor((Math.sin(time * 1.0 + i * 0.1) * 0.4 + 0.4) * 255);
-      } else if (normalizedIndex < 0.75) {
-        // High-mids - faster oscillation
-        return Math.floor((Math.sin(time * 1.5 + i * 0.2) * 0.3 + 0.3) * 255);
-      } else {
-        // Treble - rapid, subtle movements
-        return Math.floor((Math.sin(time * 2.0 + i * 0.3) * 0.2 + 0.2) * 255);
-      }
-    });
-  };
-
-  // Initialize WASM FFT for iOS
+  // Initialize WASM FFT
   useEffect(() => {
-    if (isIOS.current) {
-      console.log('iOS device detected, initializing WebAssembly FFT');
-      (async () => {
-        try {
-          console.log('Starting WASM initialization');
-          const { default: init, FFTProcessor } = await import('../lib/wasm/fft_wasm');
-          await init('/wasm/fft_wasm_bg.wasm');
+    let mounted = true;
 
-          fftProcessorRef.current = new FFTProcessor(fftSize);
-          console.log('FFT processor created with size:', fftSize);
-        } catch (error) {
-          console.error('WASM initialization failed:', error);
+    const initialize = async () => {
+      console.log('Initializing WebAssembly FFT...');
+      try {
+        const processor = await initializeWasm(fftSize);
+        if (mounted && processor) {
+          fftProcessorRef.current = processor;
+          console.log('WASM FFT processor initialized with size:', fftSize);
         }
-      })();
-    }
+      } catch (error) {
+        console.error('Failed to initialize WASM FFT:', error);
+      }
+    };
+
+    initialize();
+
+    return () => {
+      mounted = false;
+      fftProcessorRef.current = null;
+    };
   }, [fftSize]);
 
-  // Non-iOS path: Use AnalyserNode with requestAnimationFrame
+  // Log analysis every N frames
+  const logAnalysis = (data: { [key: string]: any }) => {
+    frameCountRef.current++;
+    if (frameCountRef.current % 60 === 0) {
+      console.log('FFT Analysis:', data);
+      frameCountRef.current = 0;
+    }
+  };
+
   useEffect(() => {
-    if (isIOS.current) return;
-    if (!isPlaying || !analyser) {
-      setSpectrumData(new Uint8Array(fftSize / 2));
+    if (!isPlaying || !audioRef.current || !fftProcessorRef.current || !fftWorkletNode) {
       return;
     }
 
-    const processData = () => {
-      const frequencyData = new Uint8Array(analyser.frequencyBinCount);
-      analyser.getByteFrequencyData(frequencyData);
+    const handleMessage = async (event: MessageEvent) => {
+      const { buffer: inputData, timeStamp, deltaTime, type } = event.data;
       
-      // Use default spectrum if no audio data
-      const hasAudioData = frequencyData.some(value => value > 0);
-      setSpectrumData(hasAudioData ? frequencyData : generateDefaultSpectrum());
-      
-      requestAnimationFrame(processData);
-    };
+      if (type !== 'frame') return;
 
-    processData();
-    return () => {
-      setSpectrumData(new Uint8Array(analyser ? analyser.frequencyBinCount : 0));
-    };
-  }, [isPlaying, analyser, fftSize]);
+      try {
+        const processor = fftProcessorRef.current;
+        if (!processor) return;
 
-  // iOS path: Use AudioWorkletNode messages for raw audio samples
-  useEffect(() => {
-    if (!isIOS.current || !isPlaying || !audioRef.current || !fftProcessorRef.current) {
-      return;
-    }
+        // Process FFT
+        const complexBuffer = complexBufferRef.current;
+        complexBuffer.fill(0);
+        for (let i = 0; i < inputData.length; i++) {
+          complexBuffer[i * 2] = inputData[i];
+          complexBuffer[i * 2 + 1] = 0;
+        }
 
-    if (!fftWorkletNode) {
-      console.warn('FFT Worklet Node not available on iOS, using default spectrum');
-      const defaultAnimation = () => {
-        setSpectrumData(generateDefaultSpectrum());
-        requestAnimationFrame(defaultAnimation);
-      };
-      defaultAnimation();
-      return;
-    }
+        const fftResult = await processor.processBuffer(complexBuffer);
 
-    const handleMessage = (event: MessageEvent<Float32Array>) => {
-      const inputData = event.data;
-      const timeBuffer = timeBufferRef.current;
-      let bufferIndex = bufferIndexRef.current;
-      let frameCount = frameCountRef.current;
+        // Calculate magnitudes
+        const magnitudes = new Uint8Array(fftSize / 2);
+        
+        for (let i = 0; i < fftSize / 2; i++) {
+          const real = fftResult[i * 2];
+          const imag = fftResult[i * 2 + 1];
+          const magnitude = Math.sqrt(real * real + imag * imag);
+          
+          const normalizationFactor = 1000000;
+          const normalizedMagnitude = magnitude * normalizationFactor;
+          const db = 20 * Math.log10(normalizedMagnitude + 1e-6);
+          const scaled = Math.max(0, Math.min(255, ((db + 100) * 255) / 100));
+          
+          magnitudes[i] = Math.round(scaled);
+        }
 
-      if (frameCount % 60 === 0) {
-        const hasNonZeroData = inputData.some(v => v !== 0);
-        console.log('Audio processing frame (iOS):', {
-          frame: frameCount,
-          hasNonZeroData,
-          firstFewSamples: Array.from(inputData.slice(0, 5))
+        // Apply temporal smoothing
+        // if (spectrumData.magnitudes.length === magnitudes.length) {
+        //   for (let i = 0; i < magnitudes.length; i++) {
+        //     magnitudes[i] = Math.round(
+        //       magnitudes[i] * 0.7 + spectrumData.magnitudes[i] * 0.3
+        //     );
+        //   }
+        // }
+
+        setSpectrumData({
+          magnitudes,
+          timeStamp,
+          deltaTime
         });
 
-        // If no valid audio data, use default spectrum
-        if (!hasNonZeroData) {
-          setSpectrumData(generateDefaultSpectrum());
-          return;
-        }
+      } catch (error) {
+        console.error('Error processing FFT:', error);
       }
-      frameCount++;
-
-      // Fill timeBuffer with Real/Imag (Imag = 0)
-      for (let i = 0; i < inputData.length; i++) {
-        timeBuffer[bufferIndex * 2] = inputData[i];
-        timeBuffer[bufferIndex * 2 + 1] = 0;
-        bufferIndex = (bufferIndex + 1) % fftSize;
-      }
-
-      // If buffer is full, process FFT
-      if (bufferIndex === 0) {
-        console.log('Processing full buffer with FFT (iOS)');
-        fftProcessorRef.current?.apply_window(timeBuffer);
-        fftProcessorRef.current?.process(timeBuffer);
-
-        const magnitudes = new Uint8Array(fftSize / 2);
-        for (let i = 0; i < fftSize / 2; i++) {
-          const real = timeBuffer[i * 2];
-          const imag = timeBuffer[i * 2 + 1];
-          const magnitude = Math.sqrt(real * real + imag * imag);
-          const db = 20 * Math.log10(magnitude);
-          magnitudes[i] = Math.max(0, Math.min(255, Math.floor((db + 100) * 2.55)));
-        }
-
-        setSpectrumData(magnitudes);
-      }
-
-      bufferIndexRef.current = bufferIndex;
-      frameCountRef.current = frameCount;
     };
 
-    fftWorkletNode.port.addEventListener('message', handleMessage as EventListener);
+    fftWorkletNode.port.addEventListener('message', handleMessage);
     fftWorkletNode.port.start();
 
     return () => {
-      console.log('Cleaning up iOS audio processing');
-      fftWorkletNode.port.removeEventListener('message', handleMessage as EventListener);
+      fftWorkletNode.port.removeEventListener('message', handleMessage);
     };
   }, [isPlaying, audioRef, fftSize, fftWorkletNode]);
 

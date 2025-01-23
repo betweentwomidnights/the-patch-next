@@ -9,6 +9,10 @@ import SocialMediaButtonGroup from './components/SocialButtons';
 import Intro from './components/Intro';
 import ChangeChannelButton from './components/ChangeChannelButton';
 import useHybridAudioAnalyzer from './hooks/useAudioSpectrumAnalyzer';
+import { useSynchronizedAudio } from './hooks/useSynchronizedAudio';
+import NowPlaying from './components/NowPlaying';
+import SpectrumDebugger from './SpectrumDebugger';
+import { ArrowLeft } from 'lucide-react'; // Import ArrowLeft icon for back button
 
 const Home = React.lazy(() => import('./home'));
 const Shaders = React.lazy(() => import('./shaders'));
@@ -20,8 +24,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [streamUrl, setStreamUrl] = useState<string>('/api/streams/captains_chair.mp3');
+  const { audioRef, streamInfo } = useSynchronizedAudio();
 
   // Use native AudioContext and AnalyserNode types
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
@@ -31,7 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
   const spectrumData = useHybridAudioAnalyzer({
     audioRef,
     audioContext,
-    analyser,
+    //analyser,
     isPlaying,
     fftWorkletNode,
     fftSize: 2048
@@ -52,23 +55,23 @@ const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
     setActiveComponent(prevComponent => (prevComponent === 'shaders' ? 'home' : 'shaders'));
   };
 
-  const steps = [
-    {
-      target: '.play-pause-button',
-      content: 'press play dummy',
-      advanceOn: '.play-pause-button',
-    },
-    {
-      target: '.change-image-button',
-      content: 'whats is this do',
-      advanceOn: '.change-image-button',
-    },
-    {
-      target: '.switch-stream-button',
-      content: 'you can click this too idiot',
-      advanceOn: '.switch-stream-button',
-    },
-  ];
+  // const steps = [
+  //   {
+  //     target: '.play-pause-button',
+  //     content: 'press play dummy',
+  //     advanceOn: '.play-pause-button',
+  //   },
+  //   {
+  //     target: '.change-image-button',
+  //     content: 'whats is this do',
+  //     advanceOn: '.change-image-button',
+  //   },
+  //   {
+  //     target: '.switch-stream-button',
+  //     content: 'you can click this too idiot',
+  //     advanceOn: '.switch-stream-button',
+  //   },
+  // ];
 
   return (
     <div className={`Dashboard ${activeComponent === 'gary' ? 'gary-page-active' : ''}`}>
@@ -90,18 +93,17 @@ const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
 <audio
   ref={audioRef}
   crossOrigin="anonymous"
-  src={streamUrl}
   controls={false}
 />
 
-      <Intro
+      {/* <Intro
         steps={steps}
         setRun={setRun}
         run={run}
         isPlayPauseClicked={isPlayPauseClicked}
         isChangeImageClicked={isChangeImageClicked}
         isSwitchStreamClicked={isSwitchStreamClicked}
-      />
+      /> */}
 
       <PlayPauseButton
         audioRef={audioRef}
@@ -117,9 +119,11 @@ const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
         setIsPlaying={setIsPlaying}
         fftWorkletNode={fftWorkletNode}
         setFftWorkletNode={setFftWorkletNode}
+        streamInfo={streamInfo} // Add this prop
       />
+      {/* <SpectrumDebugger spectrumData={spectrumData} fftSize={2048} sampleRate={44100} /> */}
 
-      <SwitchStreamButton
+      {/* <SwitchStreamButton
         setAnalyser={setAnalyser}
         setAudioContext={setAudioContext}
         audioRef={audioRef}
@@ -128,32 +132,40 @@ const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
         audioContext={audioContext}
         analyser={analyser}
         setIsSwitchStreamClicked={setIsSwitchStreamClicked}
-      />
+      /> */}
 
-      <ExpandableAboutButton />
+      {/* <ExpandableAboutButton /> */}
       <SocialMediaButtonGroup />
-      <ChangeChannelButton onClick={handleChannelChange} />
+      {/* <ChangeChannelButton onClick={handleChannelChange} /> */}
 
       <button
-        className="gary-button"
-        onClick={() => setActiveComponent('gary')}
-        style={{ position: 'fixed', top: '10px', right: '10px', zIndex: 50 }}
+        className="transition-all duration-300 fixed top-4 right-4 z-50 px-4 py-2 rounded-lg bg-black hover:bg-gray-500 text-white flex items-center gap-2 border border-white"
+        onClick={() => setActiveComponent(activeComponent === 'gary' ? 'shaders' : 'gary')}
       >
-        gary&apos;s page
+        {activeComponent === 'gary' ? (
+          <>
+            <ArrowLeft size={20} />
+          </>
+        ) : (
+          "more about that gary"
+        )}
       </button>
+      {/* Only show NowPlaying when shaders component is active */}
+      {activeComponent === 'shaders' && <NowPlaying />}
+      
 
       <Suspense fallback={<div>Loading...</div>}>
         {activeComponent === 'shaders' && <Shaders spectrumData={spectrumData} />}
-        {activeComponent === 'home' && (
+        {/* {activeComponent === 'home' && (
           <Home
             spectrumData={spectrumData}
             isChangeImageClicked={isChangeImageClicked}
             setIsChangeImageClicked={setIsChangeImageClicked}
           />
-        )}
+        )} */}
         {activeComponent === 'gary' && (
           <Gary
-            setStreamUrl={setStreamUrl}
+            
             setIsPlaying={setIsPlaying}
             setAudioContext={setAudioContext}
             setAnalyser={setAnalyser}
