@@ -3,8 +3,8 @@
 export class FFTProcessor {
   free(): void;
   constructor(size: number);
-  process(buffer: Float32Array): void;
-  apply_window(buffer: Float32Array): void;
+  processBuffer(input: Float32Array): Float32Array;
+  getSize(): number;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
@@ -12,11 +12,11 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_fftprocessor_free: (a: number, b: number) => void;
-  readonly fftprocessor_new: (a: number) => number;
-  readonly fftprocessor_process: (a: number, b: number, c: number, d: any) => void;
-  readonly fftprocessor_apply_window: (a: number, b: number, c: number, d: any) => void;
+  readonly fftprocessor_new: (a: number) => [number, number, number];
+  readonly fftprocessor_processBuffer: (a: number, b: any) => [number, number, number];
+  readonly fftprocessor_getSize: (a: number) => number;
   readonly __wbindgen_export_0: WebAssembly.Table;
-  readonly __wbindgen_malloc: (a: number, b: number) => number;
+  readonly __externref_table_dealloc: (a: number) => void;
   readonly __wbindgen_start: () => void;
 }
 

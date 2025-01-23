@@ -18,7 +18,7 @@ export default function Page() {
 
   return (
     <>
-      <Script 
+      {/* <Script 
         strategy="afterInteractive"
         id="crisp-chat-script"
         dangerouslySetInnerHTML={{
@@ -34,11 +34,14 @@ export default function Page() {
             })();
           `,
         }}
-      />
+      /> */}
 
       <div>
         {!showDashboard && (
-          <Landing onDashboardClick={() => setShowDashboard(true)} onLoadGary={handleLoadGary} />
+          <Landing 
+          onDashboardClick={() => setShowDashboard(true)}
+          onGaryPageClick={handleLoadGary}
+        />
         )}
         {showDashboard && (
           <Suspense fallback={<div>Loading...</div>}>

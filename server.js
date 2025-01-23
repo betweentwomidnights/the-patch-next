@@ -1,20 +1,22 @@
 const express = require('express');
-const { createProxyMiddleware } = require('http-proxy-middleware');
 const next = require('next');
 const axios = require('axios');
-const ffmpeg = require('fluent-ffmpeg');
 const fs = require('fs');
 const path = require('path');
-const { Readable } = require('stream');
+const { Server } = require('socket.io');
+const http = require('http');
+const audioStateManager = require('./AudioStateManager');
+const { streamAudio, getStreamState } = require('./modified-stream-handler');
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
-// Initialize with new structure
+
+// Path to waitlist file
 const WAITLIST_FILE = path.join(__dirname, 'data', 'android-waitlist.json');
 
-// Ensure the data directory and waitlist file exist
+// Initialize waitlist file
 async function initWaitlist() {
     const dir = path.dirname(WAITLIST_FILE);
     try {
@@ -33,82 +35,83 @@ async function initWaitlist() {
     }
 }
 
+// Initialize audio state with your 25-minute track
+function initializeAudioState() {
+    return new Promise((resolve, reject) => {
+        audioStateManager.scanAudioFolders((err, folders) => {
+            if (err) {
+                console.error('Failed to scan audio folders:', err);
+                reject(err);
+                return;
+            }
+
+            console.log('Found audio folders:', folders.map(f => f.name));
+            
+            if (folders.length > 0) {
+                audioStateManager.loadFolderTracks(folders[0].name, (err) => {
+                    if (err) {
+                        console.error('Failed to load initial folder:', err);
+                        reject(err);
+                        return;
+                    }
+                    console.log('Initial folder loaded:', folders[0].name);
+                    console.log('Audio state initialized successfully');
+                    resolve();
+                });
+            } else {
+                console.log('No audio folders found');
+                resolve();
+            }
+        });
+    });
+}
+
+
+
 app.prepare().then(async () => {
-    // Initialize waitlist file
     try {
         await initWaitlist();
+        await initializeAudioState();
     } catch (error) {
-        console.error('Error initializing waitlist:', error);
+        console.error('Error during initialization:', error);
     }
-    const server = express();
 
+    const server = express();
+    const httpServer = http.createServer(server);
+    const io = new Server(httpServer);
+
+    // Initialize socket.io for audio state manager
+    audioStateManager.initializeSocket(io);
+
+    // Middleware setup
     server.use(express.json({ limit: '100mb' }));
     server.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-    // Define streams configuration
-    const STREAMS = [
-        'captains_chair.mp3',
-        'infinitepolo.mp3',
-        'playlist.mp3',
-        'audiocraft.mp3',
-        'kemp.mp3',
-        'yikesawjeez.mp3'
-    ];
-
-    // Create proxy routes for each stream
-    STREAMS.forEach(streamName => {
-        server.get(`/api/streams/${streamName}`, createProxyMiddleware({
-            target: 'http://localhost:8000',
-            changeOrigin: true,
-            pathRewrite: {
-                [`^/api/streams/${streamName}`]: `/${streamName}`
-            },
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
-            }
-        }));
+    // API Routes
+    server.get('/api/stream/state', (req, res) => {
+        const state = audioStateManager.getStreamInfo();
+        res.json(state);
     });
 
-    // Special handler for Safari users accessing the clusterfuck stream
-    server.get('/api/safari-streams/clusterfuck', async (req, res) => {
-        try {
-            const ffmpeg = spawn('ffmpeg', [
-                '-i', 'rtsp://localhost:8554/clusterfuck',
-                '-c:a', 'copy',
-                '-f', 'mp3',
-                'pipe:1'
-            ]);
-    
-            res.setHeader('Content-Type', 'audio/mpeg');
-            ffmpeg.stdout.pipe(res);
-    
-            ffmpeg.stderr.on('data', (data) => {
-                console.log(`FFmpeg log: ${data}`);
-            });
-    
-            req.on('close', () => {
-                ffmpeg.kill();
-            });
-        } catch (error) {
-            console.error('Error:', error);
-            res.redirect('/api/streams/captains_chair.mp3');
-        }
+    server.get('/api/nowplaying', (req, res) => {
+        const nowPlaying = audioStateManager.getNowPlaying();
+        res.json(nowPlaying);
     });
 
+    // Audio streaming endpoint
+    server.get('/api/audio/:folder/:file', streamAudio);
+
+    // Music generation endpoints
     server.post('/api/generate', async (req, res) => {
         try {
             const backendResponse = await axios.post(
                 'https://gary.thecollabagepatch.com/generate',
                 req.body,
-                {
-                    responseType: 'json',
-                }
+                { responseType: 'json' }
             );
             res.json(backendResponse.data);
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error in /api/generate:', error);
             res.status(500).send('Internal Server Error');
         }
     });
@@ -118,87 +121,54 @@ app.prepare().then(async () => {
             const backendResponse = await axios.post(
                 'https://gary.thecollabagepatch.com/continue',
                 req.body,
-                {
-                    responseType: 'json',
-                }
+                { responseType: 'json' }
             );
             res.json(backendResponse.data);
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error in /api/continue:', error);
             res.status(500).send('Internal Server Error');
         }
     });
-
-    server.post('/api/crop-audio', async (req, res) => {
-        try {
-            const backendResponse = await axios.post(
-                'https://express.thecollabagepatch.com/crop-audio',
-                req.body,
-                {
-                    responseType: 'text',
-                }
-            );
-            res.send(backendResponse.data);
-        } catch (error) {
-            console.error('Error:', error);
-            res.status(500).send('Internal Server Error');
+    
+    server.post('/api/playback/mode', (req, res) => {
+        const { mode } = req.body;
+        if (mode === 'random' || mode === 'sequential') {
+            audioStateManager.playlist.playbackOrder = mode;
+            res.json({ message: `Playback mode set to ${mode}` });
+        } else {
+            res.status(400).json({ message: 'Invalid playback mode' });
         }
     });
 
-    server.post('/api/export-to-mp3', async (req, res) => {
-        const { audioData } = req.body;
-        const buffer = Buffer.from(audioData, 'base64');
-        const tempFilePath = path.join(__dirname, 'tempAudio.wav');
-        const outputFilePath = path.join(__dirname, 'outputAudio.mp3');
-    
-        await fs.promises.writeFile(tempFilePath, buffer);
-    
-        ffmpeg(tempFilePath)
-            .toFormat('mp3')
-            .on('end', async () => {
-                const outputBuffer = await fs.promises.readFile(outputFilePath);
-                res.send(outputBuffer.toString('base64'));
-                await fs.promises.unlink(tempFilePath);
-                await fs.promises.unlink(outputFilePath);
-            })
-            .on('error', (err) => {
-                console.error(`Error exporting to MP3: ${err.message}`);
-                res.status(500).send('Error exporting to MP3');
-            })
-            .save(outputFilePath);
-    });
-
-    // New waitlist endpoint using promises
+    // Waitlist endpoint
     server.post('/api/waitlist', async (req, res) => {
         try {
             const { email, firstName } = req.body;
-    
+
             if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 return res.status(400).json({ message: 'Invalid email address' });
             }
-    
+
             if (!firstName || firstName.trim().length === 0) {
                 return res.status(400).json({ message: 'First name is required' });
             }
-    
+
             await initWaitlist();
-    
-            const data = JSON.parse(
-                await fs.promises.readFile(WAITLIST_FILE, 'utf8')
-            );
-    
+
+            const data = JSON.parse(await fs.promises.readFile(WAITLIST_FILE, 'utf8'));
+
             if (data.users.some(user => user.email === email)) {
                 return res.status(409).json({ message: 'Email already registered' });
             }
-    
+
             data.users.push({
                 email,
                 firstName,
                 signupDate: new Date().toISOString()
             });
-    
+
             await fs.promises.writeFile(WAITLIST_FILE, JSON.stringify(data, null, 2));
-    
+
             res.status(200).json({ message: 'Successfully added to waitlist' });
         } catch (error) {
             console.error('Waitlist error:', error);
@@ -206,12 +176,27 @@ app.prepare().then(async () => {
         }
     });
 
+    // Track check interval for playlist management
+    setInterval(() => {
+        audioStateManager.checkAndUpdateTrack((err) => {
+            if (err) {
+                console.error('Error checking track status:', err);
+            }
+        });
+    }, 1000);
+
+    // Default handler for non-API routes
     server.all('*', (req, res) => {
         return handle(req, res);
     });
 
-    server.listen(3000, (err) => {
+    // Start the server
+    httpServer.listen(3000, (err) => {
         if (err) throw err;
         console.log('> Ready on http://localhost:3000');
+        console.log('> WebSocket server initialized');
     });
+}).catch((err) => {
+    console.error('Error starting server:', err);
+    process.exit(1);
 });

@@ -12,7 +12,7 @@ interface SwitchStreamButtonProps {
 }
 
 const streamUrls = {
-  captains_chair: 'https://thecollabagepatch.com/captains_chair.mp3',
+  captains_chair: '/api/audio/CCFiles/the_clusterfuck.mp3',
   infinitepolo: 'https://thecollabagepatch.com/infinitepolo.mp3',
   playlist: 'https://thecollabagepatch.com/playlist.mp3',
   yikesawjeez: 'https://thecollabagepatch.com/yikesawjeez.mp3',
