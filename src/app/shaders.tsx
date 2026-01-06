@@ -50,32 +50,38 @@ const DynamicEffects: React.FC<DynamicEffectsProps> = ({ kickDensity }) => {
 // Helper function to split frequency data into bands
 const getFrequencyBands = (spectrumData: Uint8Array) => {
   if (!spectrumData.length) return [0, 0, 0, 0];
-  
+
   // With 2048 FFT size and 44100Hz sample rate:
   // Each bin represents ~21.5Hz (44100/2048)
-  // We'll focus on very specific frequency ranges
   
   // Sub-bass kick drum (20-60 Hz)
-  const kickStartBin = Math.max(1, Math.floor(20 / 21.5));  // Avoid DC offset at bin 0
+  const kickStartBin = Math.max(1, Math.floor(20 / 21.5));
   const kickEndBin = Math.floor(60 / 21.5);
   const kickBand = Array.from(spectrumData.slice(kickStartBin, kickEndBin))
     .reduce((a, b) => a + b, 0) / (kickEndBin - kickStartBin);
-  
+
   // Upper bass (60-150 Hz)
-  const bassEndBin = Math.floor(150 / 21.5);
+  const bassEndBin = Math.floor(180 / 21.5);
   const bassBand = Array.from(spectrumData.slice(kickEndBin, bassEndBin))
     .reduce((a, b) => a + b, 0) / (bassEndBin - kickEndBin);
-  
+
   // Low-mids (150-600 Hz)
   const lowMidEndBin = Math.floor(600 / 21.5);
   const lowMidBand = Array.from(spectrumData.slice(bassEndBin, lowMidEndBin))
     .reduce((a, b) => a + b, 0) / (lowMidEndBin - bassEndBin);
-  
+
   // Rest of spectrum (600+ Hz)
   const highBand = Array.from(spectrumData.slice(lowMidEndBin))
     .reduce((a, b) => a + b, 0) / (spectrumData.length - lowMidEndBin);
-  
-  return [kickBand, bassBand, lowMidBand, highBand];
+
+  // Apply additional scaling to make the values more usable
+  const scaleUp = 4;  // Increase the sensitivity
+  return [
+    kickBand * scaleUp,
+    bassBand * scaleUp,
+    lowMidBand * scaleUp,
+    highBand * scaleUp
+  ];
 };
 
 interface BoxesProps {
@@ -135,7 +141,7 @@ const Boxes: React.FC<BoxesProps> = ({ spectrumData }) => {
     
     // Check for audio activity
     const totalEnergy = kickBand + bassBand + lowMidBand + highBand;
-    const activityThreshold = 10;
+    const activityThreshold = 20;
     const hasActivity = totalEnergy > activityThreshold;
     
     // Update activity state
@@ -165,7 +171,7 @@ const Boxes: React.FC<BoxesProps> = ({ spectrumData }) => {
 
     // Process kick detection with density tracking
     if (isActiveRef.current) {
-      const kickThreshold = 180
+      const kickThreshold = 200
       const bassValue = kickBand;
       const relativeDelta = bassValue / (lastBassRef.current + 1);
       const isKick = bassValue > kickThreshold && relativeDelta > 1.1;

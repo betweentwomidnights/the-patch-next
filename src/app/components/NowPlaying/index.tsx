@@ -123,7 +123,7 @@ const NowPlaying: React.FC<NowPlayingProps> = ({  }) => {
     return (
         <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-30 w-full max-w-xs px-4 md:max-w-sm md:bottom-10 md:left-10 md:translate-x-0">
             <Card className="w-full bg-black border border-white bg-opacity-50 backdrop-blur-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-2 pb-1 px-3 md:px-6">
                     <CardTitle className="text-sm font-medium text-white">now playing</CardTitle>
                     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                         <SheetTrigger asChild>

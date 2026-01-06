@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import type { Socket as NetSocket } from 'net';
 import type { Server as IOServer } from 'socket.io';
 import { Server } from 'socket.io';
-import audioStateManager from '../../audioStateManager';
+import audioStateManager from '../../AudioStateManager';
 
 interface SocketServer extends HTTPServer {
     io?: IOServer;

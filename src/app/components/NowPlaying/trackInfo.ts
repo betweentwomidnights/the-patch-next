@@ -15,10 +15,10 @@ const trackInfo: Record<string, TrackInfo> = {
   },
   'PoloFiles/ip_1.mp3': {
     displayName: "infinite polo",
-    description: "this is a 2 hour remix of a remix of polo g's '21'. the remix is by https://www.youtube.com/@zeuzmakesmusic",
+    description: "this is a 2 hour remix of a remix of polo g's '21'. the remix is by @zeuzmakesmusic. it's a python script of slices made with gary that can run forever",
     githubLink: "https://github.com/betweentwomidnights/infinitepolo",
     youtubeLink: "https://youtu.be/nQCibZE14Bo?si=7AW7ef3o4MXFWSoR",
-    additionalInfo: "you're listening to a python script that can run forever called infinitepolo:"
+    additionalInfo: "you're listening to a python script that can run forever called infinitepolo"
   },
   'CC_1_Files/captains_chair_12_ableton12.mp3': {
     displayName: "captains chair s1 ep. 12",
@@ -28,7 +28,7 @@ const trackInfo: Record<string, TrackInfo> = {
   },
   'CC_1_Files/captains_chair_15_ableton12_final.mp3': {
     displayName: "captains chair s1 ep. 15",
-    description: "from captains chair, season one, ep. 12. made while gary was still just a python script. warning...these early videos are rly dumb",
+    description: "from captains chair, season one, ep. 15. made while gary was still just a python script. warning...these early videos are rly dumb",
     youtubeLink: "https://youtu.be/3YzlC1kafW8?si=N-P9QG2F8ZAOsR_y",
     spotifyLink: "https://open.spotify.com/album/7hJAkNUupaTOOtefSBqtKT?si=H4m_7hjoTYqIoCj8IAjJdg"
   },
@@ -45,7 +45,7 @@ const trackInfo: Record<string, TrackInfo> = {
     spotifyLink: "https://open.spotify.com/album/7hJAkNUupaTOOtefSBqtKT?si=H4m_7hjoTYqIoCj8IAjJdg"
   },
   'CC_1_Files/captainschair_1_16_ableton12.mp3': {
-    displayName: "captains chair s1 ep. 16",
+    displayName: "captains chair s1 ep. 9",
     description: "from episode 9 of the captains chair, season one. there's no video for this one i guess...not sure what happened there lol",
     spotifyLink: "https://open.spotify.com/album/7hJAkNUupaTOOtefSBqtKT?si=H4m_7hjoTYqIoCj8IAjJdg"
   },

@@ -36,34 +36,22 @@ async function initWaitlist() {
 }
 
 // Initialize audio state with your 25-minute track
-function initializeAudioState() {
-    return new Promise((resolve, reject) => {
-        audioStateManager.scanAudioFolders((err, folders) => {
-            if (err) {
-                console.error('Failed to scan audio folders:', err);
-                reject(err);
-                return;
-            }
-
-            console.log('Found audio folders:', folders.map(f => f.name));
-            
-            if (folders.length > 0) {
-                audioStateManager.loadFolderTracks(folders[0].name, (err) => {
-                    if (err) {
-                        console.error('Failed to load initial folder:', err);
-                        reject(err);
-                        return;
-                    }
-                    console.log('Initial folder loaded:', folders[0].name);
-                    console.log('Audio state initialized successfully');
-                    resolve();
-                });
-            } else {
-                console.log('No audio folders found');
-                resolve();
-            }
-        });
-    });
+async function initializeAudioState() {
+    try {
+        const folders = await audioStateManager.scanAudioFolders();
+        console.log('Found audio folders:', folders.map(f => f.name));
+        
+        if (folders.length > 0) {
+            await audioStateManager.loadFolderTracks(folders[0].name);
+            console.log('Initial folder loaded:', folders[0].name);
+            console.log('Audio state initialized successfully');
+        } else {
+            console.log('No audio folders found');
+        }
+    } catch (error) {
+        console.error('Failed to initialize audio state:', error);
+        throw error; // Let the caller handle the error
+    }
 }
 
 
@@ -78,7 +66,37 @@ app.prepare().then(async () => {
 
     const server = express();
     const httpServer = http.createServer(server);
-    const io = new Server(httpServer);
+    const io = new Server(httpServer, {
+        cors: {
+            origin: "*",
+            methods: ["GET", "POST"],
+            allowedHeaders: ["*"],
+            credentials: true
+        },
+        transports: ['websocket', 'polling'],
+        allowUpgrades: true,
+        pingTimeout: 60000,
+        pingInterval: 25000
+    });
+    
+//    // Add global middleware for COOP and COEP headers
+//         server.use((req, res, next) => {
+//             // Required for SharedArrayBuffer
+//             res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+//             res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            
+//             // Optional but recommended security headers
+//             res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+//             next();
+//         });
+    
+        // Specific headers for the worklet file
+        server.get('/worklet/fft-processor.js', (req, res, next) => {
+            res.setHeader('Content-Type', 'application/javascript');
+            res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            next();
+        });
 
     // Initialize socket.io for audio state manager
     audioStateManager.initializeSocket(io);
@@ -177,12 +195,12 @@ app.prepare().then(async () => {
     });
 
     // Track check interval for playlist management
-    setInterval(() => {
-        audioStateManager.checkAndUpdateTrack((err) => {
-            if (err) {
-                console.error('Error checking track status:', err);
-            }
-        });
+    setInterval(async () => {
+        try {
+            await audioStateManager.checkAndUpdateTrack();
+        } catch (error) {
+            console.error('Error checking track status:', error);
+        }
     }, 1000);
 
     // Default handler for non-API routes
@@ -191,9 +209,10 @@ app.prepare().then(async () => {
     });
 
     // Start the server
-    httpServer.listen(3000, (err) => {
+    const port = process.env.PORT || 3000;
+    httpServer.listen(port, '0.0.0.0', (err) => {
         if (err) throw err;
-        console.log('> Ready on http://localhost:3000');
+        console.log(`> Ready on http://0.0.0.0:${port}`);
         console.log('> WebSocket server initialized');
     });
 }).catch((err) => {

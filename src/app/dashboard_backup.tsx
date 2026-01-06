@@ -3,19 +3,23 @@
 import React, { useState, useRef, Suspense, useEffect } from 'react';
 import { detectIOS } from './utils/detectIOS'; // Ensure the path to detectIOS is correct
 import PlayPauseButton from './components/PlayPauseButton';
+import SwitchStreamButton from './components/SwitchStreamButton';
+import ExpandableAboutButton from './components/ExpandableAboutButton';
 import SocialMediaButtonGroup from './components/SocialButtons';
+import Intro from './components/Intro';
+import ChangeChannelButton from './components/ChangeChannelButton';
 import useHybridAudioAnalyzer from './hooks/useAudioSpectrumAnalyzer';
 import { useSynchronizedAudio } from './hooks/useSynchronizedAudio';
 import NowPlaying from './components/NowPlaying';
 import SpectrumDebugger from './SpectrumDebugger';
 import { ArrowLeft } from 'lucide-react'; // Import ArrowLeft icon for back button
 
-
+const Home = React.lazy(() => import('./home'));
 const Shaders = React.lazy(() => import('./shaders'));
 const Gary = React.lazy(() => import('./gary'));
 
 interface DashboardProps {
-  initialComponent: 'shaders' | 'gary';
+  initialComponent: 'shaders' | 'home' | 'gary';
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
@@ -36,20 +40,38 @@ const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
     fftSize: 2048
   });
 
-
+  const [run, setRun] = useState<boolean>(false);
   const [isPlayPauseClicked, setIsPlayPauseClicked] = useState<boolean>(false);
-  
+  const [isChangeImageClicked, setIsChangeImageClicked] = useState<boolean>(false);
   const [isSwitchStreamClicked, setIsSwitchStreamClicked] = useState<boolean>(false);
 
-  const [activeComponent, setActiveComponent] = useState<'shaders' | 'gary'>(initialComponent);
+  const [activeComponent, setActiveComponent] = useState<'shaders' | 'home' | 'gary'>(initialComponent);
 
   useEffect(() => {
     setActiveComponent(initialComponent);
   }, [initialComponent]);
 
-  // const handleChannelChange = () => {
-  //   setActiveComponent(prevComponent => (prevComponent === 'shaders' ? 'home' : 'shaders'));
-  // };
+  const handleChannelChange = () => {
+    setActiveComponent(prevComponent => (prevComponent === 'shaders' ? 'home' : 'shaders'));
+  };
+
+  // const steps = [
+  //   {
+  //     target: '.play-pause-button',
+  //     content: 'press play dummy',
+  //     advanceOn: '.play-pause-button',
+  //   },
+  //   {
+  //     target: '.change-image-button',
+  //     content: 'whats is this do',
+  //     advanceOn: '.change-image-button',
+  //   },
+  //   {
+  //     target: '.switch-stream-button',
+  //     content: 'you can click this too idiot',
+  //     advanceOn: '.switch-stream-button',
+  //   },
+  // ];
 
   return (
     <div className={`Dashboard ${activeComponent === 'gary' ? 'gary-page-active' : ''}`}>
@@ -74,6 +96,14 @@ const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
   controls={false}
 />
 
+      {/* <Intro
+        steps={steps}
+        setRun={setRun}
+        run={run}
+        isPlayPauseClicked={isPlayPauseClicked}
+        isChangeImageClicked={isChangeImageClicked}
+        isSwitchStreamClicked={isSwitchStreamClicked}
+      /> */}
 
       <PlayPauseButton
         audioRef={audioRef}
@@ -92,10 +122,24 @@ const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
         streamInfo={streamInfo} // Add this prop
       />
       {/*<SpectrumDebugger spectrumData={spectrumData} fftSize={2048} sampleRate={44100} /> */}
+
+      {/* <SwitchStreamButton
+        setAnalyser={setAnalyser}
+        setAudioContext={setAudioContext}
+        audioRef={audioRef}
+        setStreamUrl={setStreamUrl}
+        setIsPlaying={setIsPlaying}
+        audioContext={audioContext}
+        analyser={analyser}
+        setIsSwitchStreamClicked={setIsSwitchStreamClicked}
+      /> */}
+
+      {/* <ExpandableAboutButton /> */}
       <SocialMediaButtonGroup />
+      {/* <ChangeChannelButton onClick={handleChannelChange} /> */}
 
       <button
-        className="transition-all duration-300 fixed top-4 right-4 z-50 px-4 py-2 rounded-lg bg-black hover:bg-gray-500 text-white flex items-center gap-2 border border-white mobile-gary-button"
+        className="transition-all duration-300 fixed top-4 right-4 z-50 px-4 py-2 rounded-lg bg-black hover:bg-gray-500 text-white flex items-center gap-2 border border-white"
         onClick={() => setActiveComponent(activeComponent === 'gary' ? 'shaders' : 'gary')}
       >
         {activeComponent === 'gary' ? (
@@ -112,6 +156,13 @@ const Dashboard: React.FC<DashboardProps> = ({ initialComponent }) => {
 
       <Suspense fallback={<div>Loading...</div>}>
         {activeComponent === 'shaders' && <Shaders spectrumData={spectrumData} />}
+        {/* {activeComponent === 'home' && (
+          <Home
+            spectrumData={spectrumData}
+            isChangeImageClicked={isChangeImageClicked}
+            setIsChangeImageClicked={setIsChangeImageClicked}
+          />
+        )} */}
         {activeComponent === 'gary' && (
           <Gary
             

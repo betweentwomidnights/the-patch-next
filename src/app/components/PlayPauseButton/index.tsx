@@ -96,31 +96,90 @@ const PlayPauseButton: React.FC<PlayPauseButtonProps> = ({
   // Audio context initialization
   const initializeAudioContext = async () => {
     if (!audioRef.current || !streamInfo) return;
-
-    console.log('Initializing AudioContext...');
-    const context = new (window.AudioContext || (window as any).webkitAudioContext)();
-
-    if (context.state === 'suspended') {
-      await context.resume();
-    }
-
-    const analyserNode = context.createAnalyser();
-    const source = context.createMediaElementSource(audioRef.current);
-    source.connect(analyserNode).connect(context.destination);
-
+  
+    console.log('Starting AudioContext initialization...');
+    
     try {
-      await context.audioWorklet.addModule('/worklet/fft-processor.js');
-      const fftNode = new AudioWorkletNode(context, 'fft-processor');
-      source.connect(fftNode).connect(context.destination);
-      setFftWorkletNode(fftNode);
-    } catch (error) {
-      console.error('Error initializing AudioWorkletNode:', error);
+      const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log('AudioContext created, state:', context.state);
+  
+      if (context.state === 'suspended') {
+        console.log('Resuming suspended context...');
+        await context.resume();
+        console.log('Context resumed, new state:', context.state);
+      }
+  
+      console.log('Creating audio nodes...');
+      const analyserNode = context.createAnalyser();
+      const source = context.createMediaElementSource(audioRef.current);
+      source.connect(analyserNode).connect(context.destination);
+      console.log('Basic audio pipeline connected');
+  
+      console.log('Adding FFT worklet module...');
+      try {
+        const workletUrl = '/worklet/fft-processor.js';
+        console.log('Loading worklet from:', workletUrl);
+        await context.audioWorklet.addModule(workletUrl);
+        console.log('Worklet module loaded successfully');
+  
+        console.log('Creating FFT AudioWorkletNode...');
+        const fftNode = new AudioWorkletNode(context, 'fft-processor', {
+          processorOptions: {
+            debugMode: true
+          }
+        });
+  
+        // Add message port error handling
+        fftNode.port.onmessageerror = (event) => {
+          console.error('FFT WorkletNode message error:', event);
+        };
+  
+        // Monitor node state
+        fftNode.onprocessorerror = (event) => {
+          console.error('FFT processor error:', event);
+        };
+  
+        source.connect(fftNode).connect(context.destination);
+        console.log('FFT node connected successfully');
+        
+        // Test the message channel
+        fftNode.port.postMessage({ type: 'test' });
+        console.log('Test message sent to worklet');
+  
+        setFftWorkletNode(fftNode);
+      } catch (error: unknown) {
+        // Type guard for Error objects
+        if (error instanceof Error) {
+          console.error('Detailed worklet error:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          });
+        } else {
+          console.error('Unknown worklet error:', error);
+        }
+        throw error;
+      }
+  
+      setAudioContext(context);
+      setAnalyser(analyserNode);
+      console.log('Audio initialization completed successfully');
+      
+    } catch (error: unknown) {
+      // Type guard for Error objects
+      if (error instanceof Error) {
+        console.error('Fatal audio initialization error:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        });
+      } else {
+        console.error('Unknown fatal error:', error);
+      }
+      throw error;
     }
-
-    setAudioContext(context);
-    setAnalyser(analyserNode);
   };
-
+  
   const handlePlay = async () => {
     if (!audioRef.current || !streamInfo) return;
 

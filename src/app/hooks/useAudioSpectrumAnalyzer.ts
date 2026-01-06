@@ -81,13 +81,13 @@ const useHybridAudioAnalyzer = ({
 
     const handleMessage = async (event: MessageEvent) => {
       const { buffer: inputData, timeStamp, deltaTime, type } = event.data;
-      
+    
       if (type !== 'frame') return;
-
+    
       try {
         const processor = fftProcessorRef.current;
         if (!processor) return;
-
+    
         // Process FFT
         const complexBuffer = complexBufferRef.current;
         complexBuffer.fill(0);
@@ -95,40 +95,69 @@ const useHybridAudioAnalyzer = ({
           complexBuffer[i * 2] = inputData[i];
           complexBuffer[i * 2 + 1] = 0;
         }
-
+    
         const fftResult = await processor.processBuffer(complexBuffer);
-
-        // Calculate magnitudes
+    
+        // Create magnitudes array
         const magnitudes = new Uint8Array(fftSize / 2);
-        
+    
+        // Calculate maximum magnitude
+        const maxMagnitude = Math.max(...Array.from({ length: fftSize / 2 }, (_, i) => {
+          const real = fftResult[i * 2];
+          const imag = fftResult[i * 2 + 1];
+          return Math.sqrt(real * real + imag * imag);
+        }));
+    
+        // Debug logging
+        if (frameCountRef.current % 60 === 0) {
+          const debugMagnitudes = Array.from({ length: 5 }, (_, i) => {
+            const real = fftResult[i * 2];
+            const imag = fftResult[i * 2 + 1];
+            const mag = Math.sqrt(real * real + imag * imag);
+            const normalized = mag / maxMagnitude * 0.3; // Reduced from 0.7
+            const db = 20 * Math.log10(normalized + 1e-6);
+            const scaled = Math.max(0, Math.min(255, ((db + 90) * 255) / 90 * 0.4)); // Wider range, more reduction
+            return {
+              raw: mag,
+              normalized,
+              db,
+              scaled
+            };
+          });
+          
+          console.log('FFT Debug:', {
+            maxMagnitude,
+            debugMagnitudes
+          });
+        }
+    
+        // Calculate normalized magnitudes with more aggressive scaling
         for (let i = 0; i < fftSize / 2; i++) {
           const real = fftResult[i * 2];
           const imag = fftResult[i * 2 + 1];
           const magnitude = Math.sqrt(real * real + imag * imag);
           
-          const normalizationFactor = 1000000;
-          const normalizedMagnitude = magnitude * normalizationFactor;
+          // More aggressive initial normalization (70% reduction)
+          const normalizedMagnitude = maxMagnitude > 0 ? 
+            (magnitude / maxMagnitude) * 0.3 : 0;
+          
+          // Convert to dB with wider range
           const db = 20 * Math.log10(normalizedMagnitude + 1e-6);
-          const scaled = Math.max(0, Math.min(255, ((db + 100) * 255) / 100));
+          
+          // Scale to 0-255 range with 60% reduction and wider dB range
+          const scaled = Math.max(0, Math.min(255, 
+            ((db + 90) * 255) / 90 * 0.4
+          ));
           
           magnitudes[i] = Math.round(scaled);
         }
-
-        // Apply temporal smoothing
-        // if (spectrumData.magnitudes.length === magnitudes.length) {
-        //   for (let i = 0; i < magnitudes.length; i++) {
-        //     magnitudes[i] = Math.round(
-        //       magnitudes[i] * 0.7 + spectrumData.magnitudes[i] * 0.3
-        //     );
-        //   }
-        // }
-
+    
         setSpectrumData({
           magnitudes,
           timeStamp,
           deltaTime
         });
-
+    
       } catch (error) {
         console.error('Error processing FFT:', error);
       }
