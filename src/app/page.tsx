@@ -9,7 +9,7 @@ const Dashboard = React.lazy(() => import('./dashboard'));
 
 export default function Page() {
   const [showDashboard, setShowDashboard] = useState(false);
-  const [initialComponent, setInitialComponent] = useState<'shaders' | 'home' | 'gary'>('shaders');
+  const [initialComponent, setInitialComponent] = useState<'shaders' | 'gary'>('shaders');
 
   const handleLoadGary = () => {
     setInitialComponent('gary'); // Set the initial component to 'gary'

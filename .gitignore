@@ -36,3 +36,8 @@ next-env.d.ts
 
 .well-known/
 
+# Rust/WASM build artifacts
+fft-wasm/target/
+
+# Data files
+data/

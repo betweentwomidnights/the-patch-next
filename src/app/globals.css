@@ -359,4 +359,34 @@ body {
   .fixed.bottom-10.left-10 .w-64 {
     width: 16rem; /* Slightly smaller width */
   }
+  /* Adjust gary button for mobile */
+  .mobile-gary-button {
+    @apply max-w-[120px] text-sm;
+    top: 16px; /* Move slightly lower to avoid social buttons */
+    right: 16px;
+  }
+
+  .mobile-gary-text {
+    @apply leading-tight;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Ensure social media buttons don't overlap */
+  .social-media-button-group {
+    @apply z-50;
+    margin-right: 130px; /* Give space for gary button */
+  }
+
+  /* Adjust NowPlaying component position */
+  .fixed.bottom-32 {
+    bottom: 5rem; /* Move up to avoid play button */
+  }
+
+  /* Add padding at the bottom to prevent content from being hidden */
+  .Dashboard {
+    padding-bottom: 80px;
+  }
 }
