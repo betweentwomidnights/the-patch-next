@@ -12,6 +12,10 @@ name: Deploy
 on:
   push:
     branches: [main]
+    # Server-config copies and docs don't change the site; don't redeploy for them.
+    paths-ignore:
+      - "infra/**"
+      - "**/*.md"
   workflow_dispatch:
 
 concurrency:
