@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>account deletion confirmed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: white;
+            color: black;
+            border: 2px solid black;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 28px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .message-box {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .success-icon {
+            color: #2ecc71;
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <div class="logo">R#</div>
+    </div>
+
+    <h1>account deleted</h1>
+
+    <div class="message-box">
+        <div class="success-icon">✓</div>
+        <p>your account and all associated data have been permanently deleted.</p>
+        <p>thank you for using rare numbers. we're sorry to see you go.</p>
+    </div>
+    
+    <script>
+        // Get the token parameter from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        // If there's a token, send the confirmation request
+        if (token) {
+            fetch(`https://rarenumbers.thecollabagepatch.com/account/confirm-deletion?token=${token}`)
+                .then(response => response.json())
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+</html>
