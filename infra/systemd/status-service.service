@@ -1,0 +1,15 @@
+[Unit]
+Description=The Collabage Patch Status Service
+After=network.target
+
+[Service]
+Type=simple
+User=kev
+WorkingDirectory=/home/kev/services/status-service
+ExecStart=/usr/bin/node dist/server.js
+Restart=always
+RestartSec=10
+Environment=PORT=3001
+
+[Install]
+WantedBy=multi-user.target
