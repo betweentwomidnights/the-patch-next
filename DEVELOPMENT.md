@@ -34,7 +34,7 @@ Pull them once so the landing page videos work locally:
 npm run media:pull
 ```
 
-This uses SSH to `kev@thecollabagepatch.com` (override with `PATCH_VM=user@host`), so
+This uses SSH to `kev@thecollabagepatch.com` (or over the tailnet: `PATCH_VM=kev@the-patch npm run media:pull`), so
 WSL needs an SSH key the VM accepts. Without it the site still runs; only the
 gitignored videos and gifs will be missing.
 
@@ -58,8 +58,11 @@ then merge the code that uses it. Push never deletes anything on the VM.
 
 ## How deploys work
 
-`.github/workflows/deploy.yml` runs `npm ci && npm run build` on GitHub's runner, then
-pipes the built `.next` (about 5 MB) over SSH to `scripts/deploy-remote.sh` on the VM. That script:
+`.github/workflows/deploy.yml` runs `npm ci && npm run build` on GitHub's runner. A
+second job (which is the only one with deploy credentials) joins the tailnet as a
+temporary `tag:ci` device and pipes the built `.next` (about 5 MB) over SSH to
+`scripts/deploy-remote.sh` on the VM. Public SSH stays closed to everyone but Kevin's
+IP; CI only reaches the VM through Tailscale. The deploy script:
 
 - refuses if the VM checkout has uncommitted changes, or the commit isn't on `origin/main`
 - moves the VM checkout to the commit (`git reset --hard`; untracked media is untouched)
@@ -67,20 +70,33 @@ pipes the built `.next` (about 5 MB) over SSH to `scripts/deploy-remote.sh` on t
 - swaps in the new `.next` (the previous one is kept as `.next.prev`) and restarts pm2
 - checks the site answers on `:3000` and rolls back automatically if not
 
-### One-time deploy setup (on the VM)
+### One-time deploy setup
 
-The workflow needs an SSH key it can use to reach the VM. That key is locked to
-`scripts/deploy-remote.sh`, so it can deploy but can't open a shell.
+1. **Tailnet policy:** apply [`infra/tailscale/policy.hujson`](infra/tailscale/policy.hujson)
+   in the Tailscale admin console (Access controls). It adds `tag:web` (the VM) and
+   `tag:ci` (deploy runners); CI can reach only the VM's port 22, and the VM can't reach
+   anything. Its built-in tests check that on save.
+2. **VM joins the tailnet** (do this after step 1, never before):
+   ```bash
+   curl -fsSL https://tailscale.com/install.sh | sh
+   sudo tailscale up --advertise-tags=tag:web --hostname=the-patch
+   ```
+   Don't pass `--ssh`. Tailscale SSH would take over port 22 on the tailnet address and
+   bypass the restricted deploy key below.
+3. **Federated identity for GitHub Actions:** in the Tailscale admin console → Settings →
+   Trust credentials, add an OpenID Connect credential for GitHub with subject
+   `repo:betweentwomidnights/the-patch-next:ref:refs/heads/main`, scope `auth_keys`
+   (write), tag `tag:ci`. Save its client ID and audience as repository secrets
+   `TS_OAUTH_CLIENT_ID` and `TS_AUDIENCE`.
+4. **Deploy SSH key** (locked to `scripts/deploy-remote.sh`, so it can deploy but can't open a shell):
+   ```bash
+   ssh-keygen -t ed25519 -N "" -C "github-actions deploy" -f ~/.ssh/github_actions_deploy
+   echo "command=\"/home/kev/the-patch-next/scripts/deploy-remote.sh\",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty $(cat ~/.ssh/github_actions_deploy.pub)" >> ~/.ssh/authorized_keys
+   cat ~/.ssh/github_actions_deploy   # paste into GitHub as the VM_DEPLOY_KEY secret
+   rm ~/.ssh/github_actions_deploy    # the VM doesn't need its own copy of the private key
+   ```
 
-```bash
-ssh-keygen -t ed25519 -N "" -C "github-actions deploy" -f ~/.ssh/github_actions_deploy
-echo "command=\"/home/kev/the-patch-next/scripts/deploy-remote.sh\",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty $(cat ~/.ssh/github_actions_deploy.pub)" >> ~/.ssh/authorized_keys
-cat ~/.ssh/github_actions_deploy   # paste into GitHub as the VM_DEPLOY_KEY secret
-```
-
-Add the private key at **Settings → Secrets and variables → Actions → New repository
-secret**, named `VM_DEPLOY_KEY`. The Azure network security group must allow inbound
-SSH (port 22) from GitHub's runners.
+Secrets live at **Settings → Secrets and variables → Actions**.
 
 ## Other pieces
 
