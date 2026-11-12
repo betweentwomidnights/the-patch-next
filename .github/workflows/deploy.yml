@@ -1,8 +1,13 @@
 name: Deploy
 
-# Build on GitHub's runners (the VM is too small to run `next build`),
-# then ship the built .next to the VM, where scripts/deploy-remote.sh
-# moves the checkout to this commit, swaps the build in, and restarts pm2.
+# Build on GitHub's runners (the VM is too small to run `next build`), then join the
+# tailnet as tag:ci and ship the built .next to the VM over SSH, where
+# scripts/deploy-remote.sh moves the checkout to this commit, swaps the build in,
+# and restarts pm2. Public SSH on the VM stays closed; CI reaches it only via Tailscale.
+#
+# Two jobs on purpose: `npm ci` runs third-party install scripts, so the build job
+# gets no deploy credentials at all. Only the deploy job can mint a Tailscale identity
+# or see the SSH key.
 
 on:
   push:
@@ -17,13 +22,13 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -35,19 +40,45 @@ jobs:
           NEXT_TELEMETRY_DISABLED: "1"
 
       - name: Package build
-        run: tar czf "$RUNNER_TEMP/build.tgz" --exclude=.next/cache .next && ls -lh "$RUNNER_TEMP/build.tgz"
+        run: tar czf build.tgz --exclude=.next/cache .next && ls -lh build.tgz
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: next-build
+          path: build.tgz
+          retention-days: 3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write # lets Tailscale verify this run via GitHub OIDC (no stored Tailscale secret)
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: next-build
+
+      - name: Join tailnet as tag:ci
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
+          ping: the-patch
 
       - name: Ship to VM
         env:
           VM_DEPLOY_KEY: ${{ secrets.VM_DEPLOY_KEY }}
         run: |
           if [ -z "$VM_DEPLOY_KEY" ]; then
-            echo "::error::Repository secret VM_DEPLOY_KEY is not set"; exit 1
+            echo "::error::Secret VM_DEPLOY_KEY is not set"; exit 1
           fi
           install -m 700 -d ~/.ssh
           printf '%s\n' "$VM_DEPLOY_KEY" > ~/.ssh/vm_deploy
           chmod 600 ~/.ssh/vm_deploy
-          # VM host key, pinned (read from /etc/ssh/ssh_host_ed25519_key.pub on the VM)
-          echo "thecollabagepatch.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHabUw55wwQ40hTJ0dP43DkmRIvb8RpK0zbFDlj5p5GK" > ~/.ssh/known_hosts
+          # VM host key, pinned (from /etc/ssh/ssh_host_ed25519_key.pub on the VM)
+          echo "the-patch ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHabUw55wwQ40hTJ0dP43DkmRIvb8RpK0zbFDlj5p5GK" > ~/.ssh/known_hosts
           ssh -i ~/.ssh/vm_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
-            kev@thecollabagepatch.com "deploy $GITHUB_SHA" < "$RUNNER_TEMP/build.tgz"
+            kev@the-patch "deploy $GITHUB_SHA" < build.tgz
