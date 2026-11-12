@@ -48,5 +48,12 @@ Set maintenance mode from `~/services/status-service`, see `src/example-cli-comm
 
 Large media under `public/` (radio audio, demo videos, gifs) is being moved out of
 git. New `.mp4/.webm/.mov/.wav/.mp3/.gif/.apng` files under `public/` are gitignored;
-files already tracked stay tracked for now. Those files exist only on the VM until
-the media sync from the dev-workflow phase is set up.
+files already tracked stay tracked for now. The VM holds the master copy; sync with
+`npm run media:pull` / `npm run media:push` (`scripts/media.sh`), see
+[DEVELOPMENT.md](../DEVELOPMENT.md).
+
+## Deploys
+
+GitHub Actions builds and ships to the VM on every push to `main`; see
+[DEVELOPMENT.md](../DEVELOPMENT.md#how-deploys-work). pm2 still runs `npm start`
+in `/home/kev/the-patch-next` as process `the-patch`.

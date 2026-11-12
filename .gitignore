@@ -54,3 +54,7 @@ public/**/*.apng
 
 # Local archives
 *.tar.gz
+
+# Deploy staging dirs on the VM (scripts/deploy-remote.sh)
+/.next.prev/
+/.deploy-*/
