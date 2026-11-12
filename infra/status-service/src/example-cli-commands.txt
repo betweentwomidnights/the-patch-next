@@ -1,0 +1,3 @@
+npm run cli -- set-maintenance -m "Testing maintenance message" -d "2 hours" -t "test" -s "gary4live-gary4beatbox"
+
+npm run cli -- set-operational

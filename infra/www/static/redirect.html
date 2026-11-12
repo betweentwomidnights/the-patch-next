@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>taking you to gary4beatbox...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            background-color: #000000;
+            color: #ff0000;
+            font-family: monospace;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-transform: lowercase;
+        }
+        
+        .container {
+            text-align: center;
+            padding: 20px;
+            max-width: 600px;
+        }
+        
+        h2 {
+            font-size: 28px;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+        
+        .loading-bar {
+            width: 80%;
+            height: 2px;
+            background-color: #222;
+            margin: 30px auto;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading-bar:after {
+            content: '';
+            position: absolute;
+            left: -50%;
+            height: 100%;
+            width: 50%;
+            background-color: #ff0000;
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { left: -50%; }
+            100% { left: 100%; }
+        }
+        
+        .manual-link {
+            margin-top: 30px;
+            opacity: 0;
+            animation: fade-in 0.5s forwards;
+            animation-delay: 1.5s;
+        }
+        
+        @keyframes fade-in {
+            to { opacity: 1; }
+        }
+        
+        a {
+            color: #ffffff;
+            text-decoration: none;
+            border-bottom: 1px solid #ff0000;
+            padding-bottom: 2px;
+            transition: all 0.2s;
+        }
+        
+        a:hover {
+            color: #ff0000;
+            border-bottom-color: #ffffff;
+        }
+        
+        .glitch {
+            position: relative;
+        }
+        
+        .glitch:after {
+            content: 'taking you to gary4beatbox...';
+            position: absolute;
+            left: 2px;
+            top: 0;
+            color: rgba(255, 255, 255, 0.7); /* White with transparency */
+            overflow: hidden;
+            clip: rect(0, 900px, 0, 0);
+            animation: noise-anim 2s infinite linear alternate-reverse;
+        }
+        
+        .glitch:before {
+            content: 'taking you to gary4beatbox...';
+            position: absolute;
+            left: -2px;
+            top: 0;
+            color: rgba(255, 0, 0, 0.7); /* Red with transparency */
+            overflow: hidden;
+            clip: rect(0, 900px, 0, 0);
+            animation: noise-anim-2 3s infinite linear alternate-reverse;
+        }
+        
+        @keyframes noise-anim {
+            0% { clip: rect(51px, 9999px, 28px, 0); }
+            5% { clip: rect(27px, 9999px, 46px, 0); }
+            10% { clip: rect(81px, 9999px, 11px, 0); }
+            15% { clip: rect(75px, 9999px, 5px, 0); }
+            20% { clip: rect(61px, 9999px, 98px, 0); }
+            25% { clip: rect(5px, 9999px, 72px, 0); }
+            30% { clip: rect(56px, 9999px, 5px, 0); }
+            35% { clip: rect(27px, 9999px, 5px, 0); }
+            40% { clip: rect(59px, 9999px, 85px, 0); }
+            45% { clip: rect(33px, 9999px, 31px, 0); }
+            50% { clip: rect(67px, 9999px, 23px, 0); }
+            55% { clip: rect(8px, 9999px, 11px, 0); }
+            60% { clip: rect(62px, 9999px, 21px, 0); }
+            65% { clip: rect(51px, 9999px, 21px, 0); }
+            70% { clip: rect(42px, 9999px, 1px, 0); }
+            75% { clip: rect(23px, 9999px, 86px, 0); }
+            80% { clip: rect(38px, 9999px, 92px, 0); }
+            85% { clip: rect(9px, 9999px, 92px, 0); }
+            90% { clip: rect(99px, 9999px, 23px, 0); }
+            95% { clip: rect(91px, 9999px, 74px, 0); }
+            100% { clip: rect(69px, 9999px, 86px, 0); }
+        }
+        
+        @keyframes noise-anim-2 {
+            0% { clip: rect(14px, 9999px, 31px, 0); }
+            5% { clip: rect(93px, 9999px, 100px, 0); }
+            10% { clip: rect(36px, 9999px, 26px, 0); }
+            15% { clip: rect(60px, 9999px, 44px, 0); }
+            20% { clip: rect(55px, 9999px, 82px, 0); }
+            25% { clip: rect(14px, 9999px, 96px, 0); }
+            30% { clip: rect(58px, 9999px, 3px, 0); }
+            35% { clip: rect(7px, 9999px, 78px, 0); }
+            40% { clip: rect(85px, 9999px, 88px, 0); }
+            45% { clip: rect(99px, 9999px, 43px, 0); }
+            50% { clip: rect(54px, 9999px, 82px, 0); }
+            55% { clip: rect(31px, 9999px, 74px, 0); }
+            60% { clip: rect(5px, 9999px, 82px, 0); }
+            65% { clip: rect(99px, 9999px, 20px, 0); }
+            70% { clip: rect(40px, 9999px, 67px, 0); }
+            75% { clip: rect(2px, 9999px, 10px, 0); }
+            80% { clip: rect(83px, 9999px, 48px, 0); }
+            85% { clip: rect(70px, 9999px, 25px, 0); }
+            90% { clip: rect(13px, 9999px, 55px, 0); }
+            95% { clip: rect(61px, 9999px, 88px, 0); }
+            100% { clip: rect(61px, 9999px, 78px, 0); }
+        }
+
+        /* Additional glitch effects using only red/black/white */
+        .static {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.03;
+            background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAFLklEQVRoge1YXW/bRhDc5ZEURUmWZMV24iJtHCQ19v5/OgZaqA4Qy/piiWSuDx4lWbIsWaLaJgUGBEiebnfmbnf2jvTilz+/LuFhwIe/fiN88QMB4B/zMkXRPJvNZnPXdV1J3TxKZVFkADA6ORV/NtcYoZRCeZ7Lqqqw7/sXUU2Zpol2u42O48B13ReRpfbsXt4Xkc/nOBqNRFEUIkXuYBgGWq2WsG0brVZrXSYAoJTC4XCIfr+Pg8FAlGUptdZ/X+RlWeLj4yP2+z1xP+9mRVFgs9nIYVkWuq6LwWDAl5eXaNvmOvGlKIR4enrCXq8ndzIp0+N+L4SQn7PPF7EsC70zD71eD23bVrZtS9Oce7vdYp7nCMDKcH3f16ZpSt/3tWVZSim1P8IIURT5MwI/o0iSJBKAZGYSQvzrdDpX4zjWdV1LAHIcx9rzPHFxcUGdTkfXNzqOI8/Pz5XrupKZSRzHBEBGUUR3d3cYRRGd3iIAAMfRY7//YTDGz6/9mOfr63/xN74VQuDNzQ01zfUJ0TQNHx4e6ObmRl9cXNBRKbVKKby9vV1rURTF5jwzL/6fJIkeCKF1URSYpiku+j9RVdXXnfQ8T1RVhatCLhIAME0T25OPp6dYFEWByE+4vp6/6HQ6OD5hn0Ik3SzHhBBz3f0Mz83hcCjbLWtxTlVVYVkWCvGE5vIdxnF8cjilyFIopTCOY1GWJei6RiHmJxnHMcZxLIShPys+H2pOp1OMogijKMJ+xzgrOpVSpCgKuq47GzCu6y62/fZ+tVqN5/+53++r9jRZlmUR3d3dYZ7nGIZhMBqNFtofhiHd3t4Ss9aBH34Tpml+nQXLsrDT6WDTbfr9PmZZurhfFAUxsw6C4KxSqV5jZ0drGoYH3/dfXEBKidPpFNM0VWmaUhRFYj5eiIE4jvH+/v6se4VhiJ7nQdM0xHFMDw8PmKYpMTMGQYBa60WyXUaXuowRQqDb7b6U1vcQALTWc/cejUaqrute5+oLDzMfWTnz/vF0RYZhiGmaKiHEs+eHnwi1sX80w1RV9YM2m3WZ73Q6OtCO8swXsZhH6QK6rsNx3JcDp+6LsF1Gw3AxCILnT/ZPgGma2Ol0qNVqLfB2UMwsrlEkCAI4fN7NU6vVw3a7fbLM6roqui+dN98XfpTnuRZCaGZWXS+qxwwzc/P5n/H81BmDmXU98jCzcmr57vTOhJqP2jCMg2EYwjTNPc8+e0yF0Lbdgq5r12dmpqqqD1JK2O/3smlDRyGjKCpP95v1qqqeUPG8Ym/RblXV4KdN1uMdwzCE53k/RdM0g+u6Fvg+2Ge6rqTl3aqqqrgsy9Hz/LjVamU/y9ZMfvJ9PwRw5tbnfnzZ1c6HJ4qiQIxjGC8/YTwev7jT7e0tpWla+5+DnueJpmtVVeHDw4MuikKlaYpZlokoihYSfRMJEREty0FVVZTnOeTbv+jvXZEkSZRSClarFXaepuXnhX9mWYYvJvXiHkKIVRbHcVQcx+M8z9WZ4Vn8dBzHYRRFBW27TFVV4uu9p9PpTmTw/l0YhtTpdIjI1FmWwWD4CvbfYfKlbw5OjTiOKUkSXVUfpdZaKqWkbdsSgDRNU1qWJW3blgCk7/va87w6wQ+u6+4AyDRNaZqm/Oj7siH+TXx/MeZ5rnOOD/uneT4XsixTAKTWWjKzYmYNQDKzBiCV0jIMS1rqeB+GX/8DVxhp+hQyaNwAAAAASUVORK5CYII=");
+        }
+    </style>
+    <script>
+    // Detection logic (same as before)
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod|mac|ios/i.test(userAgent) ||
+                 (/webkit/i.test(userAgent) && /safari/i.test(userAgent));
+    const isAndroid = /android/i.test(userAgent);
+    
+    const ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.gary4beatbox';
+    const IOS_STORE_URL = 'https://apps.apple.com/us/app/gary4beatbox/id6736522400';
+    const DEFAULT_URL = 'https://thecollabagepatch.com';
+    
+    let targetUrl = DEFAULT_URL;
+    if (isAndroid) {
+        targetUrl = ANDROID_STORE_URL;
+    } else if (isIOS) {
+        targetUrl = IOS_STORE_URL;
+    }
+
+    // Redirect after a delay
+    window.onload = function() {
+        // Set link target
+        document.getElementById('manual-link').href = targetUrl;
+        
+        // Add random glitch effects
+        setInterval(function() {
+            if (Math.random() > 0.85) {
+                document.querySelector('.glitch').style.textShadow = 
+                    `${Math.random() > 0.5 ? '' : '-'}${Math.random()}px 0 rgba(255,0,0,0.5), 
+                     ${Math.random() > 0.5 ? '' : '-'}${Math.random()}px 0 rgba(255,255,255,0.5)`;
+                
+                setTimeout(function() {
+                    document.querySelector('.glitch').style.textShadow = 'none';
+                }, 50);
+            }
+        }, 200);
+        
+        // Redirect after animation time (2.5 seconds)
+        setTimeout(function() {
+            window.location.href = targetUrl;
+        }, 2500);
+    };
+    </script>
+</head>
+<body>
+    <div class="static"></div>
+    <div class="container">
+        <h2 class="glitch">taking you to gary4beatbox...</h2>
+        
+        <div class="loading-bar"></div>
+        
+        <div class="manual-link">
+            <a href="#" id="manual-link">click here if not redirected</a>
+        </div>
+    </div>
+</body>
+</html>
