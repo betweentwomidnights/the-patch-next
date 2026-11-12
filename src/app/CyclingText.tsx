@@ -5,11 +5,12 @@ const CyclingText: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   
   const messages = [
-    "gary used to be a max4live device",
+    "gary used to be a max4live device with 3 models",
     "it was kinda a PITA to use...",
-    "now it's a vst/au", 
-    "fl studio, reaper, bitwig, logic",
-    "even garageband users can play"
+    "now it's a vst/au with seven",
+    "fl studio, reaper, bitwig, ableton, logic",
+    "even garageband users can play",
+    "this is not suno"
   ];
 
   useEffect(() => {
