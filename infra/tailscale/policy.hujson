@@ -1,7 +1,12 @@
 // Tailnet policy for the Collabage Patch tailnet.
 // Kept here for reference; the live copy is in the Tailscale admin console → Access controls.
-// Paste this whole file over the existing policy. Tailscale runs the "tests" block on save
-// and refuses the change if any of them fail.
+// Paste this whole file over the existing policy. Tailscale runs "tests" and "sshTests"
+// on save and refuses the change if any of them fail.
+//
+// Who's who:
+//   betweentwomidnights@github  Kevin (admin)
+//   heymanhew@github            Matt; SSHes to the spark as "dad"
+//   mhendricks1290@gmail.com    the other Matt; SSHes to the spark as "ath"
 {
 	"tagOwners": {
 		"tag:spark":  ["betweentwomidnights@github"],
@@ -13,23 +18,34 @@
 	},
 
 	"grants": [
-		// 1. Everything that worked before keeps working. Before this file had any rules,
-		//    Tailscale allowed all traffic; this keeps that for every existing device, but
-		//    deliberately leaves out tag:web and tag:ci.
+		// Kevin's devices, the spark and Kevin's tagged laptop reach each other on all ports.
 		{
-			"src": ["autogroup:member", "mhendricks1290@gmail.com", "tag:spark", "tag:laptop"],
-			"dst": ["autogroup:member", "tag:spark", "tag:laptop"],
+			"src": ["betweentwomidnights@github", "tag:spark", "tag:laptop"],
+			"dst": ["betweentwomidnights@github", "tag:spark", "tag:laptop"],
 			"ip":  ["*"],
 		},
-		// 2. Deploys: CI runners may reach only the website VM's SSH.
-		//    This is plain OpenSSH on the VM (NOT Tailscale SSH), so the forced-command
-		//    deploy key in ~/.ssh/authorized_keys still decides what CI can do.
+		// Everyone reaches their own devices.
+		{
+			"src": ["autogroup:member"],
+			"dst": ["autogroup:self"],
+			"ip":  ["*"],
+		},
+		// Both Matts reach the spark (all ports, e.g. web UIs). Which login they get
+		// over SSH is limited in the "ssh" section below.
+		{
+			"src": ["heymanhew@github", "mhendricks1290@gmail.com"],
+			"dst": ["tag:spark"],
+			"ip":  ["*"],
+		},
+		// Deploys: CI runners may reach only the website VM's SSH.
+		// This is plain OpenSSH on the VM (NOT Tailscale SSH), so the forced-command
+		// deploy key in ~/.ssh/authorized_keys still decides what CI can do.
 		{
 			"src": ["tag:ci"],
 			"dst": ["tag:web"],
 			"ip":  ["tcp:22"],
 		},
-		// 3. Kevin can SSH to the website VM over the tailnet (admin, media sync).
+		// Kevin can SSH to the website VM over the tailnet (admin, media sync).
 		{
 			"src": ["betweentwomidnights@github"],
 			"dst": ["tag:web"],
@@ -38,38 +54,52 @@
 	],
 
 	"ssh": [
-		{
-			"action": "accept",
-			"src":    ["autogroup:member"],
-			"dst":    ["tag:spark"],
-			"users":  ["autogroup:nonroot"],
-		},
+		// Kevin: any non-root user on the spark and his tagged laptop.
 		{
 			"action": "accept",
 			"src":    ["betweentwomidnights@github"],
-			"dst":    ["tag:laptop"],
+			"dst":    ["tag:spark", "tag:laptop"],
 			"users":  ["autogroup:nonroot"],
 		},
+		// Kevin: his own devices, as kev or dad.
 		{
+			"action": "accept",
 			"src":    ["betweentwomidnights@github"],
 			"dst":    ["autogroup:self"],
 			"users":  ["kev", "dad"],
-			"action": "accept",
 		},
+		// Matt: the spark, as dad only.
 		{
+			"action": "accept",
+			"src":    ["heymanhew@github"],
+			"dst":    ["tag:spark"],
+			"users":  ["dad"],
+		},
+		// mhendricks: the spark, as ath only.
+		{
+			"action": "accept",
 			"src":    ["mhendricks1290@gmail.com"],
 			"dst":    ["tag:spark"],
 			"users":  ["ath"],
-			"action": "accept",
 		},
 	],
 
 	"tests": [
-		// Existing access still works.
-		{"src": "betweentwomidnights@github", "accept": ["tag:spark:22", "tag:spark:443", "tag:laptop:22", "tag:web:22"]},
+		// Kevin keeps full access. (100.119.14.55 = kevins-macbook-pro)
+		{"src": "betweentwomidnights@github", "accept": ["tag:spark:22", "tag:spark:443", "tag:laptop:22", "tag:web:22", "100.119.14.55:22"]},
+		// Matt: the spark and his own machine (100.77.171.84 = msi-3), nothing else.
+		{"src": "heymanhew@github", "accept": ["tag:spark:22", "tag:spark:443", "100.77.171.84:22"], "deny": ["tag:web:22", "tag:laptop:22", "100.119.14.55:22"]},
+		// mhendricks: the spark only. Never the website VM.
+		{"src": "mhendricks1290@gmail.com", "accept": ["tag:spark:22", "tag:spark:443"], "deny": ["tag:web:22", "tag:web:443", "tag:laptop:22", "100.119.14.55:22", "100.77.171.84:22"]},
 		// CI can only reach the website VM's SSH port.
-		{"src": "tag:ci", "accept": ["tag:web:22"], "deny": ["tag:web:80", "tag:spark:22", "tag:spark:443", "tag:laptop:22"]},
+		{"src": "tag:ci", "accept": ["tag:web:22"], "deny": ["tag:web:80", "tag:spark:22", "tag:spark:443", "tag:laptop:22", "100.119.14.55:22"]},
 		// The website VM can't reach anything on the tailnet.
-		{"src": "tag:web", "deny": ["tag:spark:22", "tag:spark:443", "tag:laptop:22"]},
+		{"src": "tag:web", "deny": ["tag:spark:22", "tag:spark:443", "tag:laptop:22", "100.119.14.55:22"]},
+	],
+
+	"sshTests": [
+		{"src": "heymanhew@github", "dst": ["tag:spark"], "accept": ["dad"], "deny": ["kev", "ath", "root"]},
+		{"src": "mhendricks1290@gmail.com", "dst": ["tag:spark"], "accept": ["ath"], "deny": ["kev", "dad", "root"]},
+		{"src": "betweentwomidnights@github", "dst": ["tag:spark"], "accept": ["kev"], "deny": ["root"]},
 	],
 }
