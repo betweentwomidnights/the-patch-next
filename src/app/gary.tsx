@@ -207,7 +207,7 @@ const GaryPage: React.FC<GaryPageProps> = ({
                 />
               </div>
               <p>
-                gary started out as a python script that used bmp detection to choose sections of a full song to continue from, and then stitch them together into a (not very) seamless piece of music.
+                gary started out as a python script that used bpm detection to choose sections of a full song to continue from, and then stitch them together into a (not very) seamless piece of music.
               </p>
               <a href="https://colab.research.google.com/drive/10CMvuI6DV_VPS0uktbrOB8jBQ7IhgDgL" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline mb-4">
                 <img src="/colab-color.svg" alt="Colab" className="inline w-5 h-5 mr-2" />
@@ -225,38 +225,52 @@ const GaryPage: React.FC<GaryPageProps> = ({
           )}
 
           {activeSection === 'resources' && (
-            <div>
+            <div className="flex flex-col">
               <h2 className="text-xl md:text-3xl mb-4">fine-tuning & development resources</h2>
+
+              {/* ACE-Step Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">ACE-Step 1.5 LoRAs (carey)</h3>
+                <p className="mb-3">Side-Step is our current path for training ACE-Step 1.5 LoRAs. it is well documented, agent-readable, and can get interesting results from a single album.</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <a href="https://github.com/koda-dernet/Side-Step" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
+                    <FontAwesomeIcon icon={faGithub} /> Side-Step
+                  </a>
+                  <a href="https://youtube.com/@thepatch_dev" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
+                    training videos
+                  </a>
+                </div>
+                <p className="text-sm text-gray-400">we use the DoRA adapter with fisher analysis. ACE-Step&apos;s understand_music helper is useful for autolabelling captions and dataset metadata; it can miss bpm, but it is pretty good with key and scale. LoRAs trained on xl-base can also be applied to xl-turbo.</p>
+              </div>
+
+              {/* Stable Audio 3 Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Stable Audio 3 LoRAs</h3>
+                <p className="mb-3">Stable Audio 3 ships with a LoRA training pipeline, and the defaults have been working very well so far.</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <a href="https://github.com/stability-ai/stable-audio-3" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
+                    <FontAwesomeIcon icon={faGithub} /> stable-audio-3
+                  </a>
+                  <a href="https://github.com/dada-bots/underfit" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
+                    <FontAwesomeIcon icon={faGithub} /> underfit
+                  </a>
+                </div>
+                <p className="text-sm text-gray-400">underfit is another useful repo to know about if you want to experiment with Stable Audio 3 training.</p>
+              </div>
               
               {/* MusicGen Section */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">MusicGen (gary)</h3>
-                <p className="mb-3">fine-tuned models from the musicgen discord community hosted here. use &quot;thepatch/bleeps-medium&quot; or &quot;thepatch/vanya_ai_dnb_0.1&quot;, or &quot;thepatch/hoenn_lofi&quot; in your notebook/environment instead of &quot;facebook/musicgen-small&quot;. or just download the weights yourself. they&apos;re free.</p>
+              <div className="mb-6 order-last">
+                <h3 className="text-lg font-semibold mb-2">MusicGen (gary, legacy)</h3>
+                <p className="mb-3">MusicGen is old and lofi now, but it is the original gary, and we still find strange useful corners for it. the old Google Colab finetuning path is no longer a reliable public recommendation.</p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   <a href="https://huggingface.co/thepatch" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
                     🤗huggingface hub🤗
                   </a>
-                  <a href="https://colab.research.google.com/drive/1KRJE2iBd1uPKtMMGqL2zSIszPljRSOTG?usp=share_link" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
-                    <img src="/colab-color.svg" alt="Colab" className="inline w-5 h-5 mr-2" />
-                    beginner fine-tuning
-                  </a>
-                  <a href="https://colab.research.google.com/gist/fyremael/c85df73487ab8bec51fe421723dd9606/audiocraftwerk_v0-2-1-1.ipynb" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
-                    <img src="/colab-color.svg" alt="Colab" className="inline w-5 h-5 mr-2" />
-                    advanced fine-tuning
+                  <a href="https://github.com/betweentwomidnights/audiocraft-dgx" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
+                    <FontAwesomeIcon icon={faGithub} /> audiocraft-dgx
                   </a>
                 </div>
-                <p className="text-sm text-gray-400">16gb of gpu ram to train a small model. get together a hundred songs of a hyper specific style. electronic music is better. it&apos;s really much better to do a medium model, but it takes 29gb of gpu ram. shoutout to lyra for the original braindead finetuner, and baltigor for the advanced one.</p>
-                <p className="text-sm text-gray-400">if you want help finetuning, @baltigor in the musicgen <a href="https://discord.gg/Mxd3nYQre9" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">discord</a></p>
-              </div>
-
-              {/* Stable Audio Open Small Section */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">Stable Audio Open Small (jerry)</h3>
-                <p className="mb-3">jerry would get infinitely cooler with finetunes. the training scripts are here:</p>
-                <a href="https://github.com/Stability-AI/stable-audio-tools" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline mb-3">
-                  <FontAwesomeIcon icon={faGithub} /> stable-audio-tools
-                </a>
-                <p className="text-sm text-gray-400">if anyone has a finetune of SAOS, email kev@thecollabagepatch.com</p>
+                <p className="text-sm text-gray-400">if you already know what you are doing and want to train MusicGen anyway, audiocraft-dgx is the container base we use. for most new finetuning experiments, start with ACE-Step 1.5 or Stable Audio 3 instead.</p>
               </div>
 
               {/* Melodyflow Section */}
@@ -295,44 +309,61 @@ const GaryPage: React.FC<GaryPageProps> = ({
           {activeSection === 'localBackend' && (
             <div>
               <h2 className="text-xl md:text-3xl mb-4">run gary locally</h2>
-              
+
               <p className="mb-4">
-                since gary is free and open source, you can build the backend for it yourself locally if you have a gpu. the backends for gary4juce, gary4live, and gary4beatbox are all contained here in separate docker-compose files.
+                the easiest way to use gary4juce with your own machine is gary4local. install the local app, start the backend, then point the plugin at localhost.
               </p>
-              
-              <a href="https://github.com/betweentwomidnights/gary-backend-combined" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline mb-4">
-                <FontAwesomeIcon icon={faGithub} /> combined gary backend
-              </a>
-              
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">docker compose (recommended)</h3>
-                <p className="mb-3">the docker compose network can support several ppl at once. requires ~10+ gb gpu vram.</p>
+
+              <div className="flex justify-center mb-6">
+                <img
+                  src="/gary4local-install-startup.gif"
+                  alt="gary4local installer startup"
+                  className="w-full max-w-2xl rounded-lg border border-white/15"
+                />
               </div>
-              
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">windows installer</h3>
-                <p className="mb-3">for users who prefer not to use docker desktop/wsl2, we&apos;ve created a windows installer that runs in the system tray. it&apos;s currently not codesigned, but the repo shows exactly how it&apos;s built for full transparency.</p>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <a href="https://github.com/betweentwomidnights/gary-localhost-installer" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
-                    <FontAwesomeIcon icon={faGithub} /> installer source code
-                  </a>
-                  <a href="https://thepatch.gumroad.com/l/gary4juce" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
-                    <img src="/gumroad-logo.svg" alt="Gumroad" className="inline w-5 h-5 mr-2" />
-                    download installer
+
+              <div className="grid gap-4 mb-6 md:grid-cols-2">
+                <div className="rounded-lg border border-white/15 bg-white/5 p-4">
+                  <h3 className="text-lg font-semibold mb-2">gary4local for PC</h3>
+                  <p className="mb-3 text-sm text-gray-300">
+                    a Rust-based Windows app for installing and running local gary backends. the old PySide6 installer is retired.
+                  </p>
+                  <a href="https://github.com/betweentwomidnights/gary-localhost-installer" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 rounded hover:underline">
+                    <FontAwesomeIcon icon={faGithub} /> PC app source
                   </a>
                 </div>
-                <p className="text-sm text-gray-400">the installer is included with the gary4juce download</p>
+
+                <div className="rounded-lg border border-white/15 bg-white/5 p-4">
+                  <h3 className="text-lg font-semibold mb-2">gary4local for macOS</h3>
+                  <p className="mb-3 text-sm text-gray-300">
+                    a native Swift app for Apple Silicon users who want to run local models without wrestling the old backend stack by hand.
+                  </p>
+                  <a href="https://github.com/betweentwomidnights/gary-localhost-installer-mac" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 rounded hover:underline">
+                    <FontAwesomeIcon icon={faGithub} /> macOS app source
+                  </a>
+                </div>
               </div>
-              
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-2">requirements</h3>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">what it gives you</h3>
                 <ul className="text-sm text-gray-300 list-disc list-inside space-y-1">
-                  <li>~10+ GB GPU VRAM</li>
-                  <li>NVIDIA GPU (CUDA support)</li>
-                  <li>Docker & Docker Compose (for docker method)</li>
-                  <li>Windows 10/11 (for installer method)</li>
+                  <li>local backend setup for gary4juce</li>
+                  <li>a simpler path for GPU-rich users to run open models themselves</li>
+                  <li>less hand-built docker/network configuration for the common case</li>
                 </ul>
               </div>
+
+              <div className="mb-6">
+                <a href="https://thepatch.gumroad.com/l/gary4juce" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
+                  <img src="/gumroad-logo.svg" alt="Gumroad" className="inline w-5 h-5 mr-2" />
+                  download gary4juce
+                </a>
+                <p className="text-sm text-gray-400 mt-2">gary4local is included with the gary4juce download.</p>
+              </div>
+
+              <p className="text-sm text-gray-400">
+                we are not advertising the old docker compose network right now. gary-backend-combined is outdated, and the current backend network has grown beyond a simple public repo.
+              </p>
             </div>
           )}
 
