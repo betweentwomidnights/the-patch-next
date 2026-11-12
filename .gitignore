@@ -41,6 +41,7 @@ fft-wasm/target/
 
 # Data files
 data/
+
 # Heavy media lives outside git (synced to the server separately).
 # Already-tracked files are unaffected; this stops new ones from bloating the repo.
 public/**/*.mp4
