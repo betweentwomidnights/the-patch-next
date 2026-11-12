@@ -1,0 +1,75 @@
+// Tailnet policy for the Collabage Patch tailnet.
+// Kept here for reference; the live copy is in the Tailscale admin console → Access controls.
+// Paste this whole file over the existing policy. Tailscale runs the "tests" block on save
+// and refuses the change if any of them fail.
+{
+	"tagOwners": {
+		"tag:spark":  ["betweentwomidnights@github"],
+		"tag:laptop": ["betweentwomidnights@github"],
+		// Website VM (public-facing). Can be reached, can't reach anything.
+		"tag:web":    ["betweentwomidnights@github"],
+		// Ephemeral GitHub Actions deploy runners.
+		"tag:ci":     ["betweentwomidnights@github"],
+	},
+
+	"grants": [
+		// 1. Everything that worked before keeps working. Before this file had any rules,
+		//    Tailscale allowed all traffic; this keeps that for every existing device, but
+		//    deliberately leaves out tag:web and tag:ci.
+		{
+			"src": ["autogroup:member", "mhendricks1290@gmail.com", "tag:spark", "tag:laptop"],
+			"dst": ["autogroup:member", "tag:spark", "tag:laptop"],
+			"ip":  ["*"],
+		},
+		// 2. Deploys: CI runners may reach only the website VM's SSH.
+		//    This is plain OpenSSH on the VM (NOT Tailscale SSH), so the forced-command
+		//    deploy key in ~/.ssh/authorized_keys still decides what CI can do.
+		{
+			"src": ["tag:ci"],
+			"dst": ["tag:web"],
+			"ip":  ["tcp:22"],
+		},
+		// 3. Kevin can SSH to the website VM over the tailnet (admin, media sync).
+		{
+			"src": ["betweentwomidnights@github"],
+			"dst": ["tag:web"],
+			"ip":  ["tcp:22"],
+		},
+	],
+
+	"ssh": [
+		{
+			"action": "accept",
+			"src":    ["autogroup:member"],
+			"dst":    ["tag:spark"],
+			"users":  ["autogroup:nonroot"],
+		},
+		{
+			"action": "accept",
+			"src":    ["betweentwomidnights@github"],
+			"dst":    ["tag:laptop"],
+			"users":  ["autogroup:nonroot"],
+		},
+		{
+			"src":    ["betweentwomidnights@github"],
+			"dst":    ["autogroup:self"],
+			"users":  ["kev", "dad"],
+			"action": "accept",
+		},
+		{
+			"src":    ["mhendricks1290@gmail.com"],
+			"dst":    ["tag:spark"],
+			"users":  ["ath"],
+			"action": "accept",
+		},
+	],
+
+	"tests": [
+		// Existing access still works.
+		{"src": "betweentwomidnights@github", "accept": ["tag:spark:22", "tag:spark:443", "tag:laptop:22", "tag:web:22"]},
+		// CI can only reach the website VM's SSH port.
+		{"src": "tag:ci", "accept": ["tag:web:22"], "deny": ["tag:web:80", "tag:spark:22", "tag:spark:443", "tag:laptop:22"]},
+		// The website VM can't reach anything on the tailnet.
+		{"src": "tag:web", "deny": ["tag:spark:22", "tag:spark:443", "tag:laptop:22"]},
+	],
+}
