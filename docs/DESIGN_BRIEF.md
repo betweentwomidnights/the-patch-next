@@ -86,7 +86,7 @@ key. the model list and descriptions are in the
 
 | asset | path | notes |
 | --- | --- | --- |
-| company logo | `public/brand/collabage-patch-logo.webp`, `-512.png` | white background, not transparent |
+| company logo | `public/brand/collabage-patch-logo.webp`, `-512.png` | already transparent (it only looks white-backed in viewers that flatten it) |
 | gary4juce demo video | `public/gary4juce_v4_landing.mp4` + `_poster.jpg` | current landing hero |
 | foundation keys building a keybed | `public/foundation-keys/foundation-keys-build.mp4` (97 KB), `.gif` (754 KB), `-poster.jpg` | prefer the mp4 as a looping muted video |
 | gary4local install/startup | `public/gary4local-install-startup.gif` | |
@@ -102,7 +102,7 @@ with `npm run media:push` (see [DEVELOPMENT.md](../DEVELOPMENT.md)).
 
 **assets we still need** (ask kev, don't fake them):
 
-- the logo with a transparent background, ideally as SVG
+- the logo as SVG (the webp/png are transparent and are what the site uses now)
 - screenshots or a fresh screen recording of the gary4juce v5 ui, including yuey
 - a square product image for foundation keys and the sa3 projects
 - any photos of kev, matt, or the setup, if kev wants a human face on /about

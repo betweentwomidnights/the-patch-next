@@ -63,6 +63,28 @@ download links live in `src/app/lib/catalog.ts`; prices live in Stripe, found by
 **Rolling back:** revert the commit and push, or open an older successful run in
 **Actions** and re-run it. Any commit on `main` can be redeployed.
 
+## How the site is put together
+
+Three things live in the root layout (`src/app/layout.tsx`) and never unmount, which is
+what makes the site feel like one place:
+
+- **the ink** (`src/app/visual/`): one canvas over the whole site. On WebGPU it's a fluid
+  of particles (`gpu/`, our own MLS-MPM sim and an ink-style renderer); without WebGPU it
+  falls back to a simpler WebGL particle cloud (`gl/`); with "reduce motion" on it doesn't
+  run at all and pages show plain images. Pages don't talk to it. They place a
+  `<StageAnchor shape="ball|patch|gary">` and the ink goes to the most important anchor
+  on screen, or back to the radio dock when there isn't one.
+- **the radio** (`src/app/radio/`): `radio.ts` follows the server's clock and keeps playing
+  across navigation. `RadioDock` is the round button in the corner; `/radio` is the big version.
+  The ink listens through `visual/features.ts`.
+- **the header**.
+
+The look (colours, fonts, the hand-drawn outlines and buttons) is all in
+`src/app/globals.css` and `tailwind.config.js`.
+
+Handy while working on the ink (dev only): `?engine=gl` forces the WebGL fallback,
+`?ink=150000` sets the particle count, and `window.__ink` in the console shows fps.
+
 ## How deploys work
 
 `.github/workflows/deploy.yml` runs `npm ci && npm run build` on GitHub's runner. A

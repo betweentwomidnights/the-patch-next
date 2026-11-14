@@ -39,16 +39,16 @@ export default async function ThanksPage({ searchParams }: { searchParams: { ses
   if (!paid) {
     return (
       <>
-        <h1 className="text-2xl md:text-3xl font-bold">thanks</h1>
-        <p className="mt-3 text-gray-300">
+        <h1 className="loud text-5xl sm:text-6xl">thanks</h1>
+        <p className="mt-4 max-w-prose text-base text-paper/90">
           we couldn’t find a completed payment for this link. if you did pay, your receipt from stripe has the details, and
           you can email{' '}
-          <a href="mailto:kev@thecollabagepatch.com" className="underline hover:text-white">
+          <a href="mailto:kev@thecollabagepatch.com" className="link">
             kev@thecollabagepatch.com
           </a>
           .
         </p>
-        <Link href="/products" className="mt-6 inline-block text-sm underline text-gray-300 hover:text-white">
+        <Link href="/products" className="link mt-8 inline-block">
           back to software
         </Link>
       </>
@@ -57,18 +57,19 @@ export default async function ThanksPage({ searchParams }: { searchParams: { ses
 
   return (
     <>
-      <h1 className="text-3xl md:text-4xl font-bold">thank you</h1>
-      <p className="mt-3 text-lg text-gray-300">
+      <h1 className="loud text-6xl text-patch sm:text-7xl">thank you</h1>
+      <p className="mt-4 max-w-prose text-xl">
         {paid.amount ? `your ${paid.amount}` : 'your payment'}
         {paid.product ? ` for ${paid.product.name}` : ''} keeps this whole thing going.
       </p>
-      {paid.email && <p className="mt-2 text-sm text-gray-400">a receipt is on its way to {paid.email}.</p>}
+      {paid.email && <p className="label mt-3">a receipt is on its way to {paid.email}.</p>}
 
       {paid.product && (
-        <section className="mt-10">
-          <h2 className="text-xl font-semibold mb-5">your downloads</h2>
+        <section className="mt-12 max-w-xl">
+          <h2 className="loud mb-5 text-3xl">your downloads</h2>
           {paid.product.warning && (
-            <p className="mb-5 rounded-lg border border-yellow-300/35 bg-yellow-300/10 px-4 py-3 text-xs leading-relaxed text-yellow-100">
+            <p className="sketch sketch-quiet mb-5 px-4 py-3 text-sm leading-relaxed text-paper/90">
+              <span className="label mb-1 block text-patch">heads up</span>
               {paid.product.warning}
             </p>
           )}
@@ -76,9 +77,9 @@ export default async function ThanksPage({ searchParams }: { searchParams: { ses
           {paid.product.related?.map((r) => {
             const other = getProduct(r.slug);
             return other ? (
-              <p key={r.slug} className="mt-6 text-sm text-gray-300">
+              <p key={r.slug} className="mt-6 text-ash">
                 also grab{' '}
-                <Link href={`/products/${other.slug}`} className="underline hover:text-white">
+                <Link href={`/products/${other.slug}`} className="link font-bold text-paper">
                   {other.name}
                 </Link>{' '}
                 to {r.why}.
