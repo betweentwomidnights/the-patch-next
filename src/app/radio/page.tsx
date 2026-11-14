@@ -1,15 +1,15 @@
-'use client';
-import React, { Suspense } from 'react';
+import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import RadioRoom from './RadioRoom';
 
-const Dashboard = React.lazy(() => import('../dashboard'));
+export const metadata: Metadata = {
+  title: 'radio · the patch',
+  description: 'a live station of music made with gary. everyone who tunes in hears the same thing.',
+};
 
-// The audiovisual radio on its own URL; /radio?view=gary opens the
-// "more about gary" view. next.config.js gives this route the cross-origin
-// isolation headers the dashboard was built with.
+// /radio?view=gary used to be the "more about gary" view. That story lives on
+// /about now, and old links (the landing page handed them out) still land there.
 export default function RadioPage({ searchParams }: { searchParams: { view?: string } }) {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-black" />}>
-      <Dashboard initialComponent={searchParams.view === 'gary' ? 'gary' : 'shaders'} />
-    </Suspense>
-  );
+  if (searchParams.view === 'gary') redirect('/about#gary');
+  return <RadioRoom />;
 }
