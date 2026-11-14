@@ -354,11 +354,13 @@ const GaryPage: React.FC<GaryPageProps> = ({
               </div>
 
               <div className="mb-6">
-                <a href="https://thepatch.gumroad.com/l/gary4juce" target="_blank" rel="noopener noreferrer" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
-                  <img src="/gumroad-logo.svg" alt="Gumroad" className="inline w-5 h-5 mr-2" />
+                <a href="/products/gary4juce" className="inline-block text-lg font-semibold py-2 px-4 rounded hover:underline">
                   download gary4juce
                 </a>
-                <p className="text-sm text-gray-400 mt-2">gary4local is included with the gary4juce download.</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  to run the models on your own machine, get{' '}
+                  <a href="/products/gary4local" className="underline hover:text-white">gary4local</a>.
+                </p>
               </div>
 
               <p className="text-sm text-gray-400">
