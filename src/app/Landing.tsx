@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { Card } from './components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tab';
 import { Button } from './components/ui/button';
@@ -8,6 +9,7 @@ import WaitlistModal from './WaitlistModal';
 import CyclingText from './CyclingText';
 import SocialMediaButtonGroup from './components/SocialButtons';
 import GaryDetailsModal from './GaryDetailsModal';
+import { SupportLinks } from './components/SponsorButton';
 
 // Add this type
 type SlideDirection = 'left' | 'right';
@@ -170,6 +172,16 @@ const handlePrev = () => {
         compact
         className="absolute left-3 top-3 z-[60] transition-all duration-300 sm:fixed sm:left-5 sm:top-4"
       />
+      {/* Site nav, mirroring the social pill. It only stays fixed on wide
+          screens, where it can't collide with the tab bar that slides up. */}
+      <nav
+        aria-label="Site"
+        className="absolute right-3 top-3 z-[60] flex items-center gap-3 rounded-full border border-white/70 bg-black/75 px-3 py-1.5 text-xs text-white shadow-[0_0_18px_rgba(255,255,255,0.16)] backdrop-blur-md sm:gap-4 sm:px-4 sm:py-2 sm:text-sm lg:fixed lg:right-5 lg:top-4"
+      >
+        <Link href="/products" className="hover:text-gray-300">software</Link>
+        <Link href="/merch" className="hover:text-gray-300">merch</Link>
+        <Link href="/about" className="hover:text-gray-300">about</Link>
+      </nav>
       <motion.div
         aria-hidden="true"
         className="pointer-events-none fixed inset-x-0 z-30 flex justify-center sm:hidden"
@@ -373,9 +385,7 @@ const handlePrev = () => {
 
                 <div className="mb-6 flex flex-col items-center gap-3">
                   <a
-                    href="https://thepatch.gumroad.com/l/gary4juce"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="/products/gary4juce"
                     className="w-40 bg-white text-black px-7 py-3 rounded-full
                                shadow-[0_0_10px_rgba(255,255,255,0.2)]
                                hover:shadow-[0_0_15px_rgba(255,255,255,0.4)]
@@ -417,6 +427,7 @@ const handlePrev = () => {
             >
               here&apos;s a bunch of music
             </Button>
+            <SupportLinks />
             <div className="text-[11px] leading-snug text-gray-400">
               <div>the collabage patch, inc.</div>
               <a
