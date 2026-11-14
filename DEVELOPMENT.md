@@ -53,6 +53,13 @@ WSL forwards port 3000, so open it in your normal Windows browser.
 **Adding media:** drop the file in `public/`, run `npm run media:push` to copy it to the VM,
 then merge the code that uses it. Push never deletes anything on the VM.
 
+**Payments (Stripe):** put a sandbox secret key in `.env.local` as `STRIPE_SECRET_KEY=sk_test_...`
+(Dashboard → account menu → Sandboxes → Developers → API keys), then run `npm run stripe:seed` once
+to create the pay-what-you-want products in that sandbox. Pay with test card `4242 4242 4242 4242`.
+Without a key the site still runs; the pay button just shows as unavailable. Software products and
+download links live in `src/app/lib/catalog.ts`; prices live in Stripe, found by lookup key
+(e.g. `gary4juce_pwyw`). The VM's `.env.local` holds the live key.
+
 **Rolling back:** revert the commit and push, or open an older successful run in
 **Actions** and re-run it. Any commit on `main` can be redeployed.
 

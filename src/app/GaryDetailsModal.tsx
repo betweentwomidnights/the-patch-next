@@ -11,7 +11,7 @@ interface GaryDetailsModalProps {
   onGaryPageClick: () => void;
 }
 
-const gumroadUrl = 'https://thepatch.gumroad.com/l/gary4juce';
+const downloadUrl = '/products/gary4juce';
 
 const modelLinks = [
   {
@@ -190,9 +190,7 @@ const GaryDetailsModal: React.FC<GaryDetailsModalProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <a
-                href={gumroadUrl}
-              target="_blank"
-                rel="noopener noreferrer"
+                href={downloadUrl}
                 className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black transition-all duration-200 hover:scale-105 hover:shadow-[0_0_15px_rgba(255,255,255,0.35)]"
               >
                 download
