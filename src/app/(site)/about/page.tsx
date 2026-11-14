@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { SPONSORS_URL } from '../../lib/links';
+import LazyVideo from '../../components/media/LazyVideo';
+import WaveRule from '../../components/site/WaveRule';
 
 export const metadata: Metadata = {
   title: 'about · the patch',
@@ -11,7 +13,7 @@ export const metadata: Metadata = {
 // Due for a refresh: it predates yuey and the native runtimes.
 
 const ext = { target: '_blank', rel: 'noopener noreferrer' } as const;
-const linkClass = 'underline underline-offset-2 hover:text-white';
+const linkClass = 'link';
 
 interface Resource {
   title: string;
@@ -69,10 +71,10 @@ const resources: Resource[] = [
 
 export default function AboutPage() {
   return (
-    <div className="space-y-14">
+    <div className="space-y-20">
       <section>
-        <h1 className="text-2xl md:text-3xl font-bold">about</h1>
-        <div className="mt-6 space-y-4 text-gray-200 leading-relaxed max-w-2xl">
+        <h1 className="loud text-5xl sm:text-6xl">about</h1>
+        <div className="mt-6 max-w-prose space-y-4 text-base leading-relaxed">
           <p>
             the collabage patch makes open source ai music tools for musicians: plugins, apps, and local runtimes that put
             the models inside the session instead of in a browser tab.
@@ -95,58 +97,63 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section>
-        <h2 className="text-xl md:text-2xl font-semibold">how gary happened</h2>
-        <div className="mt-5 overflow-hidden rounded-lg border border-white/15 bg-black max-w-2xl">
-          <video className="w-full" src="/gary_full_960_24fps.mp4" autoPlay loop muted playsInline aria-label="gary over the years" />
-        </div>
-        <div className="mt-5 space-y-4 text-gray-200 leading-relaxed max-w-2xl">
-          <p>
-            gary started out as a python script that used bpm detection to choose sections of a full song to continue
-            from, and then stitch them together into a (not very) seamless piece of music. (
-            <a href="https://colab.research.google.com/drive/10CMvuI6DV_VPS0uktbrOB8jBQ7IhgDgL" {...ext} className={linkClass}>
-              colab notebook
-            </a>
-            )
-          </p>
-          <p>
-            wanting more granular control, the max4live device was made next. it still works and uses the same backend
-            (websockets routes):{' '}
-            <a href="https://github.com/betweentwomidnights/gary4live" {...ext} className={linkClass}>
-              gary4live on github
-            </a>
-            .
-          </p>
-          <p>
-            couldn’t forget about the fl studio people, so the vst/au was created. this one is being actively developed:{' '}
-            <Link href="/products/gary4juce" className={linkClass}>
-              gary4juce
-            </Link>
-            .
-          </p>
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-xl md:text-2xl font-semibold">how the patch started</h2>
-        <div className="mt-5 space-y-4 text-gray-200 leading-relaxed max-w-2xl">
-          <p>i started coding in 2023 with gpt 3.5 turbo with this website as my first project.</p>
-          <div className="overflow-hidden rounded-lg border border-white/15 bg-black">
-            <video className="w-full" src="/thepatch_v1_small.mp4" controls muted playsInline preload="metadata" aria-label="the first version of this website" />
+      <section id="gary" className="grid items-start gap-x-12 gap-y-8 lg:grid-cols-2">
+        <div>
+          <h2 className="loud text-4xl">how gary happened</h2>
+          <div className="mt-5 max-w-prose space-y-4 leading-relaxed">
+            <p>
+              gary started out as a python script that used bpm detection to choose sections of a full song to continue
+              from, and then stitch them together into a (not very) seamless piece of music. (
+              <a href="https://colab.research.google.com/drive/10CMvuI6DV_VPS0uktbrOB8jBQ7IhgDgL" {...ext} className={linkClass}>
+                colab notebook
+              </a>
+              )
+            </p>
+            <p>
+              wanting more granular control, the max4live device was made next. it still works and uses the same backend
+              (websockets routes):{' '}
+              <a href="https://github.com/betweentwomidnights/gary4live" {...ext} className={linkClass}>
+                gary4live on github
+              </a>
+              .
+            </p>
+            <p>
+              couldn’t forget about the fl studio people, so the vst/au was created. this one is being actively developed:{' '}
+              <Link href="/products/gary4juce" className={linkClass}>
+                gary4juce
+              </Link>
+              .
+            </p>
           </div>
-          <p>everything since then has been developed alongside gpt and claude as we all got better at it.</p>
+        </div>
+        <div className="screen rotate-[0.5deg]">
+          <LazyVideo src="/gary_full_960_24fps.mp4" label="gary over the years" className="w-full" />
+        </div>
+      </section>
+
+      <section className="grid items-start gap-x-12 gap-y-8 lg:grid-cols-2">
+        <div className="screen -rotate-[0.5deg] lg:order-first">
+          <LazyVideo src="/thepatch_v1_small.mp4" label="the first version of this website" mode="player" className="w-full" />
+        </div>
+        <div>
+          <h2 className="loud text-4xl">how the patch started</h2>
+          <div className="mt-5 max-w-prose space-y-4 leading-relaxed">
+            <p>i started coding in 2023 with gpt 3.5 turbo with this website as my first project.</p>
+            <p>everything since then has been developed alongside gpt and claude as we all got better at it.</p>
+          </div>
         </div>
       </section>
 
       <section>
-        <h2 className="text-xl md:text-2xl font-semibold">fine-tuning & development resources</h2>
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <WaveRule seed={4} className="mb-12 opacity-60" />
+        <h2 className="loud text-4xl">fine-tuning & development resources</h2>
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
           {resources.map((r) => (
-            <div key={r.title} className="rounded-lg border border-white/15 bg-white/5 p-5">
-              <h3 className="font-semibold">{r.title}</h3>
-              <p className="mt-2 text-sm text-gray-200 leading-relaxed">{r.body}</p>
-              {r.note && <p className="mt-2 text-xs text-gray-400 leading-relaxed">{r.note}</p>}
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <div key={r.title} className="card sketch-quiet">
+              <h3 className="loud text-[1.7rem]">{r.title}</h3>
+              <p className="mt-2 text-[0.95rem] leading-relaxed">{r.body}</p>
+              {r.note && <p className="mt-2 text-sm leading-relaxed text-ash">{r.note}</p>}
+              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm">
                 {r.links.map((l) => (
                   <a key={l.href} href={l.href} {...ext} className={linkClass}>
                     {l.label}
@@ -158,12 +165,16 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="text-gray-300">
+      <section className="text-base">
         questions, bugs, or ideas:{' '}
         <a href="mailto:kev@thecollabagepatch.com" className={linkClass}>
           kev@thecollabagepatch.com
         </a>
-        , or find us on discord.
+        , or find us on{' '}
+        <a href="https://discord.gg/VECkyXEnAd" {...ext} className={linkClass}>
+          discord
+        </a>
+        .
       </section>
     </div>
   );

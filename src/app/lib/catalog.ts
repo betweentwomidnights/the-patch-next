@@ -119,6 +119,11 @@ export const products: Product[] = [
       'describe a sound (or roll the dice), preview six notes, then build a 48–60 key keyboard you can play. it runs RoyalCities’ Foundation-1.2 keybeds model locally through sa3.cpp.',
       'save kits as FLAC or WAV plus an sfz, or drag single notes straight into your DAW. VST3, CLAP, and standalone.',
     ],
+    media: {
+      video: '/foundation-keys/foundation-keys-build.mp4',
+      poster: '/foundation-keys/foundation-keys-build-poster.jpg',
+      alt: 'foundation keys building a playable keyboard from a text prompt',
+    },
     channels: [{ label: 'downloads', repo: 'foundation-1.2-iplug2', tag: /^v\d+\.\d+\.\d+$/ }],
     assets: [
       { match: /macos-metal/i, label: 'macOS · metal', hint: gpuHint.metal },
