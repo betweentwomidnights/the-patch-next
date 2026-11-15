@@ -22,6 +22,9 @@ export default function RadioDock() {
   const radio = useRadio({ watch: true });
   const pathname = usePathname();
   const onRadioPage = pathname === '/radio';
+  // The landing page's copy and buttons sit right where the pill would pop
+  // out (especially on phones), so there it's just the play button.
+  const showPill = pathname !== '/';
   const label = radio.playing ? 'pause the radio' : 'play the radio';
 
   // The pill would sit on top of whatever you're reading, so it only shows
@@ -69,6 +72,7 @@ export default function RadioDock() {
           </span>
         </button>
 
+        {showPill && (
         <Link href="/radio" aria-label="open the radio" className={cn(pill, 'flex max-w-[min(62vw,22rem)]')}>
           <span className="label flex items-center gap-1.5">
             <span className={cn('h-1.5 w-1.5 rounded-full bg-patch', radio.status === 'playing' && 'animate-blink')} />
@@ -76,6 +80,7 @@ export default function RadioDock() {
           </span>
           <span className="truncate text-sm font-bold">{radio.track?.title ?? 'the patch radio'}</span>
         </Link>
+        )}
       </div>
     </>
   );
