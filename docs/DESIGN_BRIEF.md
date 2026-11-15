@@ -92,7 +92,7 @@ key. the model list and descriptions are in the
 | gary4local install/startup | `public/gary4local-install-startup.gif` | |
 | waveform demo: yuey + ace-step billie lora, switching to sa3 at 0:47 | `public/demos/yuey_billie_sa3.mp4` | rendered with the waveform visualizer |
 | waveform demo: four sa3 LoRAs | `public/demos/sa3_four_loras.mp4` | same |
-| beatbox demos | `public/gary4beatbox_demos/` | phone app, being reworked |
+| beatbox demos | `public/gary4beatbox_demos/sa3_013.mp4`, `sa3_005.mp4` + `_poster.jpg` | v4 on Android and iOS; waveform renders from the mobile renderer |
 | the first version of this site | `public/thepatch_v1_small.mp4` | used on /about |
 | gary history montage | `public/gary_full_960_24fps.mp4` | used on /about |
 | radio music | `public/audio/<folder>/` | scanned by `AudioStateManager.js` |

@@ -17,6 +17,8 @@ export interface FrameInput {
   cx: number;
   cy: number;
   radius: number;
+  /** One-time entrance: particles spread from the centre, 0..1. */
+  emergence: number;
   /** 0 = ball of ink, 1 = formed into the current image. */
   form: number;
   /** Spring strength toward the image this frame (dips on a kick so it bursts). */

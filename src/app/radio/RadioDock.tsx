@@ -69,24 +69,13 @@ export default function RadioDock() {
           </span>
         </button>
 
-        {radio.tunedIn ? (
-          (
-            <Link href="/radio" aria-label="open the radio" className={cn(pill, 'flex max-w-[min(62vw,22rem)]')}>
-              <span className="label flex items-center gap-1.5">
-                <span className={cn('h-1.5 w-1.5 rounded-full bg-patch', radio.status === 'playing' && 'animate-blink')} />
-                {radio.status === 'playing' ? 'on air' : radio.status === 'loading' ? 'tuning…' : radio.status === 'error' ? 'lost the signal' : 'paused'}
-              </span>
-              <span className="truncate text-sm font-bold">{radio.track?.title ?? 'the patch radio'}</span>
-            </Link>
-          )
-        ) : (
-          (
-            <button type="button" onClick={radio.play} className={cn(pill, 'hidden sm:flex')}>
-              <span className="label">the patch radio</span>
-              <span className="max-w-[16rem] truncate text-sm font-bold">{radio.track ? `tune in: ${radio.track.title}` : 'tune in'}</span>
-            </button>
-          )
-        )}
+        <Link href="/radio" aria-label="open the radio" className={cn(pill, 'flex max-w-[min(62vw,22rem)]')}>
+          <span className="label flex items-center gap-1.5">
+            <span className={cn('h-1.5 w-1.5 rounded-full bg-patch', radio.status === 'playing' && 'animate-blink')} />
+            {radio.status === 'playing' ? 'on air' : radio.status === 'loading' ? 'tuning…' : radio.status === 'error' ? 'lost the signal' : radio.tunedIn ? 'paused' : 'the patch radio'}
+          </span>
+          <span className="truncate text-sm font-bold">{radio.track?.title ?? 'the patch radio'}</span>
+        </Link>
       </div>
     </>
   );

@@ -2,8 +2,10 @@
 export interface TrackInfo {
     displayName: string;
     description: string;
+    year?: number;
     youtubePlaylist?: string;
     youtubeLink?: string;
+    youtubeChannel?: string;
     spotifyLink?: string;
     colabLink?: string;
     githubLink?: string;

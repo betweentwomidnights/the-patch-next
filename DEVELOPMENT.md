@@ -53,6 +53,16 @@ WSL forwards port 3000, so open it in your normal Windows browser.
 **Adding media:** drop the file in `public/`, run `npm run media:push` to copy it to the VM,
 then merge the code that uses it. Push never deletes anything on the VM.
 
+**Radio metadata:** the added tracks have editable titles, descriptions, and YouTube
+links in `src/app/radio/catalog/2026.json` and `development.json`. See
+[`src/app/radio/catalog/README.md`](src/app/radio/catalog/README.md) for the fallback
+text and how to mark a track as having no video.
+
+**Radio rotation:** all folders share one weighted pool. Edit `radio-rotation.json`
+for track weights and repeat spacing, then restart the server. `1` is normal,
+smaller values are rarer, and `0` disables a track. The catalog README explains
+the settings and the explicit timezone/eligibility hook for future scheduling.
+
 **Payments (Stripe):** put a sandbox secret key in `.env.local` as `STRIPE_SECRET_KEY=sk_test_...`
 (Dashboard → account menu → Sandboxes → Developers → API keys), then run `npm run stripe:seed` once
 to create the pay-what-you-want products in that sandbox. Pay with test card `4242 4242 4242 4242`.

@@ -342,9 +342,8 @@ struct View {
   time: f32, glow: f32, level: f32, kick: f32,
   stageC: vec2f, stageR: f32, dim: f32,
   ink: vec3f, lineW: f32,
-  // spectrum ring strength, hat, snare, brightness
+  // emergence, hat, snare, brightness
   fx: vec4f,
-  bands: array<vec4f, 4>,
 }
 const FAR_HALF: f32 = 5000.0;
 `;
@@ -376,8 +375,13 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VSOut
   );
   let p = particles[ii];
   let c = corners[vi];
-  let radius = view.radius * (0.82 + 0.36 * p.seed);
-  let center = view.rot * (p.pos - view.center) + vec3f(0.0, 0.0, -view.camDist);
+  // Render the first second as a staggered emergence from the centre.
+  // Leave the fluid simulation at its normal density throughout.
+  let rel = p.pos - view.center;
+  let delay = p.seed * 0.22 + min(length(rel) / (view.camDist * 0.22), 1.0) * 0.12;
+  let opening = smoothstep(delay, 1.0, view.fx.x);
+  let radius = view.radius * (0.82 + 0.36 * p.seed) * sqrt(opening);
+  let center = view.rot * (rel * opening) + vec3f(0.0, 0.0, -view.camDist);
   let vp = center + vec3f(c * radius, 0.0);
   let z = -vp.z;
   var ndc = vec2f(vp.x / (z * view.tanHalf * view.aspect), vp.y / (z * view.tanHalf));
@@ -469,32 +473,6 @@ fn depthAt(p: vec2i) -> f32 {
   return textureLoad(depthTex, clamp(p, vec2i(0), size - vec2i(1)), 0).r;
 }
 
-fn viewBand(u: f32) -> f32 {
-  let x = clamp(u, 0.0, 1.0) * 15.0;
-  let i = u32(floor(x));
-  let j = min(i + 1u, 15u);
-  return mix(view.bands[i / 4u][i % 4u], view.bands[j / 4u][j % 4u], x - floor(x));
-}
-
-// A ring of thin bars around the ink, one reading of the spectrum on each
-// side (lows at the bottom, highs at the top), like the waveform videos
-// bent into a circle.
-fn spectrumRing(fc: vec2f) -> f32 {
-  let rel = (fc - view.stageC) / max(view.stageR, 1.0);
-  let rr = length(rel);
-  if (rr < 1.0 || rr > 1.36) { return 0.0; }
-  let ang = atan2(rel.x, rel.y);            // 0 at the bottom, +-pi at the top
-  let u = abs(ang) / 3.14159;
-  let count = 44.0;
-  let slot = u * count;
-  let bar = smoothstep(0.3, 0.2, abs(fract(slot) - 0.5));
-  let level = smoothstep(0.3, 0.95, viewBand((floor(slot) + 0.5) / count));
-  let inner = 1.04;
-  let len = 0.012 + level * 0.24;
-  let body = step(inner, rr) * step(rr, inner + len);
-  return bar * body * (0.3 + 0.7 * level);
-}
-
 fn stripes(v: f32, period: f32, width: f32) -> f32 {
   let f = abs(fract(v / period) - 0.5) * 2.0;
   return smoothstep(width, width + 0.25, f);
@@ -508,8 +486,7 @@ fn fs(@builtin(position) fc: vec4f) -> @location(0) vec4f {
   // a soft red glow behind the ink, breathing with the music
   let rr = length(fc.xy - view.stageC) / max(view.stageR, 1.0);
   let halo = exp(-max(rr - 0.45, 0.0) * 2.4) * view.glow;
-  let bars = spectrumRing(fc.xy) * view.fx.x;
-  let bg = vec4f(view.ink * (halo * 0.42 + bars * 0.7), halo * 0.3 + bars * 0.7);
+  let bg = vec4f(view.ink * halo * 0.42, halo * 0.3);
 
   // hand-drawn lines "boil": they are redrawn a few times a second
   let boil = floor(view.time * 8.0);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { setStageStatus } from './stage';
 
 /**
  * The ink: one canvas over the whole site that never unmounts, so it carries
@@ -16,7 +17,11 @@ export default function VisualLayer() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    setStageStatus({ engine: 'pending', formedAt: null });
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setStageStatus({ engine: 'none' });
+      return;
+    }
 
     let cancelled = false;
     let stop: (() => void) | undefined;

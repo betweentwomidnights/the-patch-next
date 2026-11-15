@@ -1,6 +1,6 @@
-// The software catalog. Download links come from each repo's GitHub releases
-// (see ./github.ts), so publishing a release updates the site with no deploy.
-// Prices live in Stripe, found by `stripeLookupKey`; products without one are free.
+// The software catalog. Desktop downloads come from GitHub releases
+// (see ./github.ts); mobile apps link to their stores. Desktop prices live
+// in Stripe, found by `stripeLookupKey`.
 
 export interface ReleaseChannel {
   /** Heading shown above this channel's downloads, e.g. "windows". */
@@ -26,7 +26,10 @@ export interface Product {
   tagline: string;
   /** Paragraphs for the product page. */
   about: string[];
-  media?: { video?: string; poster?: string; image?: string; alt: string };
+  media?: { video?: string; poster?: string; image?: string; alt: string; square?: boolean };
+  /** Store-managed apps can provide their version and store destinations. */
+  version?: string;
+  stores?: { label: string; href: string }[];
   channels: ReleaseChannel[];
   /** Ordered: the first rule an asset matches gives its label and its position. */
   assets: AssetRule[];
@@ -81,10 +84,11 @@ export const products: Product[] = [
   {
     slug: 'gary4local',
     name: 'gary4local',
-    tagline: 'run gary’s models on your own computer',
+    tagline: 'run models and train your own LoRAs locally',
     about: [
       'a control center for running the gary4juce models locally: it installs the runtimes, downloads the models, and keeps the services running while you work.',
       'pair it with gary4juce in your DAW, or use the models from the standalone app.',
+      'train your own LoRAs with gary4local, then use them with the matching models in our software.',
     ],
     media: { image: '/gary4local-install-startup.gif', alt: 'gary4local install and startup' },
     channels: [
@@ -114,7 +118,7 @@ export const products: Product[] = [
   {
     slug: 'foundation-keys',
     name: 'foundation keys',
-    tagline: 'text to playable synth',
+    tagline: 'text to playable synth. runs on sa3.cpp.',
     about: [
       'describe a sound (or roll the dice), preview six notes, then build a 48–60 key keyboard you can play. it runs RoyalCities’ Foundation-1.2 keybeds model locally through sa3.cpp.',
       'save kits as FLAC or WAV plus an sfz, or drag single notes straight into your DAW. VST3, CLAP, and standalone.',
@@ -134,15 +138,43 @@ export const products: Product[] = [
       { match: /win-cuda-clap/i, label: 'windows · cuda · CLAP', hint: gpuHint.cuda },
       { match: /win-cuda-standalone/i, label: 'windows · cuda · standalone', hint: gpuHint.cuda },
     ],
+    experimental: true,
+  },
+  {
+    slug: 'gary4beatbox',
+    name: 'gary4beatbox',
+    tagline: 'sa3, musicgen, and melodyflow on your phone.',
+    about: [
+      'make music on your phone with sa3, musicgen, and melodyflow.',
+      'v4 is live on android and ios. we’re still iterating.',
+    ],
+    version: 'v4',
+    media: {
+      video: '/gary4beatbox/app-preview.mp4',
+      poster: '/gary4beatbox/app-preview-poster.jpg',
+      alt: 'gary4beatbox v4 on a phone',
+      square: true,
+    },
+    stores: [
+      { label: 'download for ios', href: 'https://apps.apple.com/us/app/gary4beatbox/id6736522400' },
+      { label: 'get it on google play', href: 'https://play.google.com/store/apps/details?id=com.gary4beatbox' },
+    ],
+    channels: [],
+    assets: [],
   },
   {
     slug: 'sa3-ableton-extension',
-    name: 'sa3 for ableton',
-    tagline: 'stable audio 3 inside ableton live arrangement selections',
+    name: 'the sa3 ableton extension',
+    tagline: 'stable audio 3 fully embedded inside ableton’s context menu. no external apps. all c++. runs on sa3.cpp.',
     about: [
-      'generate, transform, and continue audio directly on an arrangement selection in ableton live. sa3.cpp is embedded in the extension, so there is no separate server to run.',
+      'generate, transform, and continue audio directly from an arrangement selection in ableton live.',
       'install the .ablx in the ableton live beta with developer mode off. only one build can be installed at a time.',
     ],
+    media: {
+      video: '/sa3/ableton-extension.mp4',
+      poster: '/sa3/ableton-extension-poster.jpg',
+      alt: 'the sa3 ableton extension generating audio from ableton’s context menu',
+    },
     channels: [{ label: 'windows', repo: 'sa3-ableton-extension', tag: /^v\d+\.\d+\.\d+$/ }],
     assets: [
       { match: /vulkan\.ablx$/i, label: 'vulkan', hint: gpuHint.vulkan },
@@ -152,12 +184,17 @@ export const products: Product[] = [
   },
   {
     slug: 'sa3-plugin-demo',
-    name: 'sa3 plugin demo',
-    tagline: 'stable audio 3 running inside a plugin',
+    name: 'sa3 iplug2',
+    tagline: 'stable audio 3 in VST3, AU, REAPER extension + standalone. no companion app. all c++. runs on sa3.cpp. bring your own LoRAs.',
     about: [
-      'an example plugin that runs stable audio 3 in-process through libsa3: generate, transform, and continue, with LoRA import and blending. there’s also a REAPER extension.',
-      'this is a demo for exploring sa3.cpp, not a full production plugin.',
+      'stable audio 3 fully embedded in a VST3, AU, REAPER extension, and standalone plugin.',
+      'generate, transform, and continue audio in your DAW. import and blend your own LoRAs directly in the plugin.',
     ],
+    media: {
+      video: '/sa3/reaper-extension.mp4',
+      poster: '/sa3/reaper-extension-poster.jpg',
+      alt: 'the sa3 REAPER extension generating audio with LoRA blending and automation',
+    },
     channels: [{ label: 'downloads', repo: 'sa3.cpp-iplug2-demo', tag: /^v\d+\.\d+\.\d+$/ }],
     assets: [
       { match: /^SA3IPlug2Demo.*macos-metal/i, label: 'plugin · macOS · metal', hint: gpuHint.metal },

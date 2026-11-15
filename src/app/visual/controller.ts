@@ -38,6 +38,7 @@ export class VisualController {
   private formedFor = 0;
 
   private fade = 0;
+  private emergence = 0;
   private avgDt = 1 / 60;
   private twistSign = 1;
   private lastSnare = 0;
@@ -154,7 +155,8 @@ export class VisualController {
       this.fade = Math.max(0, this.fade - dt * 3);
       if (this.fade <= 0) return;
     } else {
-      this.fade = Math.min(1, this.fade + dt * 1.6);
+      this.fade = 1;
+      this.emergence = Math.min(1, this.emergence + dt / 1.1);
       if (placement.anchor !== this.anchor) {
         this.anchor = placement.anchor;
         this.sinceSwitch = 0;
@@ -230,19 +232,19 @@ export class VisualController {
     const docked = this.radius < 70 * dpr;
     if (docked && !features.active && this.sinceSwitch > 2 && this.frameNo % 2 === 1) return;
 
-    const parallaxX = pointerActive ? ((px - this.cx) / Math.max(this.radius, 1)) * 0.16 : 0;
-    const parallaxY = pointerActive ? ((py - this.cy) / Math.max(this.radius, 1)) * 0.12 : 0;
-    const spin = this.time * 0.16;
     const frame: FrameInput = {
       time: this.time,
       dt: docked && !features.active ? dt * 2 : dt,
       cx: this.cx,
       cy: this.cy,
       radius: this.radius,
+      emergence: this.emergence,
       form: this.form,
       pull: this.form * this.form * (1 - Math.min(0.8, kick * 0.95)),
-      yaw: spin * (1 - this.form) + parallaxX * this.form,
-      pitch: Math.sin(this.time * 0.11) * 0.18 * (1 - this.form) + parallaxY * this.form,
+      // Keep the view fixed while particles flow into place or react to
+      // the pointer. Scaling a running spin by form made each morph turn.
+      yaw: 0,
+      pitch: 0,
       kick,
       kickSeed: seed,
       bass: features.bass,
@@ -268,6 +270,7 @@ export class VisualController {
         fps: Math.round(1 / this.avgDt),
         particles: this.engine.particleCount,
         form: +this.form.toFixed(2),
+        emergence: +this.emergence.toFixed(2),
         canvas: [W, H],
       };
     }
