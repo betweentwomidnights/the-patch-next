@@ -1,6 +1,20 @@
 import { TrackInfo } from '../../types/track';
+import collections from '../../radio/catalog';
 
 const trackInfo: Record<string, TrackInfo> = {
+  // Edit the collection catalogs to add titles, descriptions, and videos later.
+  // Empty descriptions use the collection's fallback; empty links stay hidden.
+  ...Object.fromEntries(collections.flatMap((collection) => collection.tracks.map((track) => [
+    `${collection.folder}/${track.file}`,
+    {
+      displayName: track.displayName,
+      description: track.description.trim() || collection.fallbackDescription,
+      youtubeLink: track.youtubeLink.trim() || undefined,
+      youtubeChannel: 'youtubeChannel' in track && typeof track.youtubeChannel === 'string'
+        ? track.youtubeChannel.trim() || undefined : undefined,
+      year: collection.year ?? undefined,
+    },
+  ]))),
   'CCFiles/the_clusterfuck.mp3': {
     displayName: "captains chair s2",
     description: "all the episodes of captains chair season 2 combined into one continuous piece of music. watch all the tracks get made on youtube:",

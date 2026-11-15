@@ -35,15 +35,14 @@ async function initWaitlist() {
     }
 }
 
-// Initialize audio state with your 25-minute track
+// Discover every collection, then start the shared weighted rotation.
 async function initializeAudioState() {
     try {
         const folders = await audioStateManager.scanAudioFolders();
         console.log('Found audio folders:', folders.map(f => f.name));
         
         if (folders.length > 0) {
-            await audioStateManager.loadFolderTracks(folders[0].name);
-            console.log('Initial folder loaded:', folders[0].name);
+            await audioStateManager.startRotation();
             console.log('Audio state initialized successfully');
         } else {
             console.log('No audio folders found');
@@ -148,16 +147,6 @@ app.prepare().then(async () => {
         }
     });
     
-    server.post('/api/playback/mode', (req, res) => {
-        const { mode } = req.body;
-        if (mode === 'random' || mode === 'sequential') {
-            audioStateManager.playlist.playbackOrder = mode;
-            res.json({ message: `Playback mode set to ${mode}` });
-        } else {
-            res.status(400).json({ message: 'Invalid playback mode' });
-        }
-    });
-
     // Waitlist endpoint
     server.post('/api/waitlist', async (req, res) => {
         try {
