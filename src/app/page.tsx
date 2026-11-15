@@ -46,7 +46,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 }
 
 export default function LandingPage() {
-  // gary4beatbox already has its own phone section below.
+  // gary4beatbox already has its own phone section.
   const others = products.filter((p) => p.slug !== 'gary4juce' && p.slug !== 'gary4beatbox');
 
   return (
@@ -85,7 +85,7 @@ export default function LandingPage() {
         <SectionRule className="mb-14" />
         <div className="grid items-start gap-10 lg:grid-cols-[1.15fr_1fr]">
           <div>
-            <Eyebrow>the flagship · VST3 / AU / standalone</Eyebrow>
+            <Eyebrow>VST3 / AU / standalone</Eyebrow>
             <h2 id="gary4juce" className="loud text-5xl sm:text-6xl">
               gary4juce
             </h2>
@@ -117,16 +117,18 @@ export default function LandingPage() {
 
           <div>
             <h3 className="label mb-3">what&apos;s inside</h3>
-            <ul className="divide-y divide-paper/10 border-y border-paper/10">
+            {/* phones: a two-column grid of names and sources, so the list
+                doesn't run several screens long. descriptions from sm up. */}
+            <ul className="grid grid-cols-2 gap-x-5 border-t border-paper/10 sm:grid-cols-1 sm:border-b">
               {[...models, stemSeparator].map((m) => (
-                <li key={m.name} className="py-3">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="loud text-[1.7rem]">{m.name}</span>
-                    <a href={m.href} target="_blank" rel="noopener noreferrer" className="label shrink-0 underline underline-offset-2 hover:text-patch">
+                <li key={m.name} className="min-w-0 border-b border-paper/10 py-2.5 sm:py-3 sm:last:border-b-0">
+                  <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+                    <span className="loud text-[1.35rem] leading-tight sm:text-[1.7rem]">{m.name}</span>
+                    <a href={m.href} target="_blank" rel="noopener noreferrer" className="label truncate underline underline-offset-2 hover:text-patch sm:shrink-0">
                       {m.source}
                     </a>
                   </div>
-                  <p className="mt-0.5 text-sm text-ash">{m.does}</p>
+                  <p className="mt-0.5 hidden text-sm text-ash sm:block">{m.does}</p>
                 </li>
               ))}
             </ul>
@@ -152,6 +154,34 @@ export default function LandingPage() {
               </figcaption>
             </figure>
           ))}
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------ phone */}
+      <section className="mx-auto mt-28 max-w-page px-4 sm:px-6" aria-labelledby="beatbox">
+        <SectionRule className="mb-14" />
+        <div className="grid items-start gap-10 md:grid-cols-2">
+          <div>
+            <Eyebrow>for the phone</Eyebrow>
+            <h2 id="beatbox" className="loud text-4xl sm:text-5xl">
+              gary4beatbox
+            </h2>
+            <p className="mt-4 max-w-prose">
+              make music on your phone with sa3, musicgen, and melodyflow.
+            </p>
+            <p className="mt-3 max-w-prose text-ash">
+              v4 is live on android and ios. we’re still iterating.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-4">
+              <a href="https://apps.apple.com/us/app/gary4beatbox/id6736522400" target="_blank" rel="noopener noreferrer" className="btn-line">
+                download for ios
+              </a>
+              <a href="https://play.google.com/store/apps/details?id=com.gary4beatbox" target="_blank" rel="noopener noreferrer" className="btn-line">
+                get it on google play
+              </a>
+            </div>
+          </div>
+          <DemoCarousel demos={beatboxDemos} />
         </div>
       </section>
 
@@ -203,33 +233,6 @@ export default function LandingPage() {
               open the radio
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------ phone */}
-      <section className="mx-auto mt-28 max-w-page px-4 sm:px-6" aria-labelledby="beatbox">
-        <div className="grid items-start gap-10 md:grid-cols-2">
-          <div>
-            <Eyebrow>for the phone</Eyebrow>
-            <h2 id="beatbox" className="loud text-4xl sm:text-5xl">
-              gary4beatbox
-            </h2>
-            <p className="mt-4 max-w-prose">
-              make music on your phone with sa3, musicgen, and melodyflow.
-            </p>
-            <p className="mt-3 max-w-prose text-ash">
-              v4 is live on android and ios. we’re still iterating.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-4">
-              <a href="https://apps.apple.com/us/app/gary4beatbox/id6736522400" target="_blank" rel="noopener noreferrer" className="btn-line">
-                download for ios
-              </a>
-              <a href="https://play.google.com/store/apps/details?id=com.gary4beatbox" target="_blank" rel="noopener noreferrer" className="btn-line">
-                get it on google play
-              </a>
-            </div>
-          </div>
-          <DemoCarousel demos={beatboxDemos} />
         </div>
       </section>
 
