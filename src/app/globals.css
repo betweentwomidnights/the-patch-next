@@ -132,6 +132,33 @@
     @apply sketch block bg-soot/80 p-5 sm:p-6;
   }
 
+  /* Thin red rules share the cards' hand-drawn edge. */
+  .red-rule {
+    position: relative;
+    height: 2px;
+  }
+  .nav-current {
+    position: relative;
+  }
+  .red-rule::before,
+  .nav-current::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    height: 8px;
+    padding-block: 3px;
+    background: rgb(var(--red));
+    background-clip: content-box;
+    filter: url(#rough-a);
+    pointer-events: none;
+  }
+  .red-rule::before {
+    top: -3px;
+  }
+  .nav-current::after {
+    bottom: -6px;
+  }
+
   /* ------------------------------------------------------------ buttons */
   .btn {
     @apply relative inline-flex items-center justify-center gap-2 bg-patch px-5 pb-2.5 pt-2 font-display text-[1.5rem] leading-none text-ink transition-transform duration-100;

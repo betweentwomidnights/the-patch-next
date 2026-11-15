@@ -59,12 +59,12 @@ export function pickPlacement(vw: number, vh: number): Placement | null {
 // ---- what the engine tells the page ----
 
 export interface StageStatus {
-  engine: 'none' | 'webgpu' | 'webgl2';
+  engine: 'pending' | 'none' | 'webgpu' | 'webgl2';
   /** The anchor element whose image the particles have finished forming. */
   formedAt: HTMLElement | null;
 }
 
-let status: StageStatus = { engine: 'none', formedAt: null };
+let status: StageStatus = { engine: 'pending', formedAt: null };
 const listeners = new Set<() => void>();
 
 export function getStageStatus(): StageStatus {

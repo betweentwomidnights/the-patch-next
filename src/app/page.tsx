@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import StageAnchor from './visual/StageAnchor';
 import SiteFooter from './components/site/SiteFooter';
-import WaveRule from './components/site/WaveRule';
+import SectionRule from './components/site/SectionRule';
 import CyclingText from './components/home/CyclingText';
-import { NowPlayingLine, TuneInButton } from './components/home/TuneIn';
+import { NowPlayingLine } from './components/home/TuneIn';
 import LazyVideo from './components/media/LazyVideo';
 import DemoCarousel, { type Demo } from './components/media/DemoCarousel';
 import { models, stemSeparator } from './lib/models';
 import { products } from './lib/catalog';
+import SoftwareCopy from './components/site/SoftwareCopy';
 
 // Rendered with the waveform visualizer (gary-waveform-visualizer).
 const waveformDemos: Demo[] = [
@@ -26,32 +27,35 @@ const waveformDemos: Demo[] = [
 ];
 
 const beatboxDemos: Demo[] = [
-  '8-bit yum, vanya, terry',
-  'big yums',
-  'decent drums only',
-  'keygen, gary',
-  'keygen v2 large 16',
-  'vanya, keygen, terry',
-].map((title, i) => ({
-  title,
-  src: `/gary4beatbox_demos/gary4beatbox_demo_${i + 1}.mp4`,
-  poster: `/gary4beatbox_demos/gary4beatbox_demo_${i + 1}_poster.jpg`,
-}));
+  {
+    title: 'sa3 · 013',
+    note: 'gary4beatbox v4',
+    src: '/gary4beatbox_demos/sa3_013.mp4',
+    poster: '/gary4beatbox_demos/sa3_013_poster.jpg',
+  },
+  {
+    title: 'sa3 · 005',
+    note: 'gary4beatbox v4',
+    src: '/gary4beatbox_demos/sa3_005.mp4',
+    poster: '/gary4beatbox_demos/sa3_005_poster.jpg',
+  },
+];
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="label mb-3 text-patch">{children}</p>;
 }
 
 export default function LandingPage() {
-  const others = products.filter((p) => p.slug !== 'gary4juce');
+  // gary4beatbox already has its own phone section below.
+  const others = products.filter((p) => p.slug !== 'gary4juce' && p.slug !== 'gary4beatbox');
 
   return (
     <>
       {/* ------------------------------------------------------------ hero */}
       <section className="mx-auto flex min-h-[100svh] max-w-page flex-col items-center justify-center px-4 pb-24 pt-[calc(var(--header-h)+1rem)] text-center sm:px-6">
-        {/* The ink forms the logo here. The image underneath is what shows
-            first, and what stays if the browser can't run the ink. */}
-        <StageAnchor shape="patch" priority={10} className="aspect-square w-[min(74vw,46svh,27rem)]">
+        {/* The logo emerges entirely from particles. A static image is only
+            shown when animation is unavailable. */}
+        <StageAnchor shape="patch" priority={10} fallback="unavailable" className="aspect-square w-[min(74vw,46svh,27rem)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/brand/collabage-patch-logo.webp"
@@ -73,13 +77,12 @@ export default function LandingPage() {
           <Link href="/products/gary4juce" className="btn">
             get gary4juce
           </Link>
-          <TuneInButton />
         </div>
       </section>
 
       {/* -------------------------------------------------------- gary4juce */}
       <section className="mx-auto max-w-page px-4 sm:px-6" aria-labelledby="gary4juce">
-        <WaveRule seed={2} className="mb-14 opacity-70" />
+        <SectionRule className="mb-14" />
         <div className="grid items-start gap-10 lg:grid-cols-[1.15fr_1fr]">
           <div>
             <Eyebrow>the flagship · VST3 / AU / standalone</Eyebrow>
@@ -154,7 +157,7 @@ export default function LandingPage() {
 
       {/* ---------------------------------------------------- other software */}
       <section className="mx-auto mt-28 max-w-page px-4 sm:px-6" aria-labelledby="more-software">
-        <WaveRule seed={5} className="mb-14 opacity-70" />
+        <SectionRule className="mb-14" />
         <Eyebrow>also from the patch</Eyebrow>
         <h2 id="more-software" className="loud text-4xl sm:text-5xl">
           more software
@@ -162,13 +165,15 @@ export default function LandingPage() {
         <ul className="mt-8 grid gap-5 sm:grid-cols-2">
           {others.map((p) => (
             <li key={p.slug}>
-              <Link href={`/products/${p.slug}`} className="card group h-full">
+              <div className="card group relative h-full">
                 <div className="flex items-baseline justify-between gap-3">
-                  <h3 className="loud text-2xl group-hover:text-patch">{p.name}</h3>
+                  <h3 className="loud text-2xl group-hover:text-patch">
+                    <Link href={`/products/${p.slug}`} className="after:absolute after:inset-0">{p.name}</Link>
+                  </h3>
                   <span className="label shrink-0">{p.experimental ? 'experiment' : 'free'}</span>
                 </div>
-                <p className="mt-1.5 text-ash">{p.tagline}</p>
-              </Link>
+                <p className="mt-1.5 text-ash"><SoftwareCopy>{p.tagline}</SoftwareCopy></p>
+              </div>
             </li>
           ))}
         </ul>
@@ -194,7 +199,6 @@ export default function LandingPage() {
             <NowPlayingLine className="mt-4" />
           </div>
           <div className="flex flex-wrap items-center gap-4 md:flex-col md:items-stretch">
-            <TuneInButton variant="solid" />
             <Link href="/radio" className="btn-line">
               open the radio
             </Link>
@@ -211,12 +215,10 @@ export default function LandingPage() {
               gary4beatbox
             </h2>
             <p className="mt-4 max-w-prose">
-              gary4beatbox can start from your mic or a jerry-generated loop, then gary continues it and terry transforms
-              it. these demos start from jerry loops.
+              make music on your phone with sa3, musicgen, and melodyflow.
             </p>
-            <p className="sketch sketch-quiet mt-5 max-w-prose px-4 py-3 text-sm text-ash">
-              gary4beatbox was built quite some time ago and is about to undergo a big transformation. for now, the vst is
-              where the new model work is landing first.
+            <p className="mt-3 max-w-prose text-ash">
+              v4 is live on android and ios. we’re still iterating.
             </p>
             <div className="mt-6 flex flex-wrap gap-4">
               <a href="https://apps.apple.com/us/app/gary4beatbox/id6736522400" target="_blank" rel="noopener noreferrer" className="btn-line">

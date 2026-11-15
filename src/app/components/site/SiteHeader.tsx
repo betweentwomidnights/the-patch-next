@@ -38,8 +38,8 @@ export default function SiteHeader() {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'py-1 underline-offset-[6px] transition-colors hover:text-patch',
-                  active && 'underline decoration-patch decoration-wavy decoration-2',
+                  'py-1 transition-colors hover:text-patch',
+                  active && 'nav-current',
                 )}
               >
                 {item.label}

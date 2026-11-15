@@ -8,21 +8,11 @@ import SocialMediaButtonGroup from '../components/SocialButtons';
 import { useRadio } from './useRadio';
 import { cn } from '../lib/utils';
 
-type Scene = 'auto' | Shape;
+type Scene = Exclude<Shape, 'patch'>;
 
 const scenes: { id: Scene; label: string }[] = [
-  { id: 'auto', label: 'auto' },
   { id: 'ball', label: 'ink' },
-  { id: 'patch', label: 'the patch' },
   { id: 'gary', label: 'gary' },
-];
-
-// What "auto" does: mostly loose ink, pulling into a logo now and then.
-const rotation: { shape: Shape; seconds: number }[] = [
-  { shape: 'ball', seconds: 40 },
-  { shape: 'patch', seconds: 22 },
-  { shape: 'ball', seconds: 40 },
-  { shape: 'gary', seconds: 22 },
 ];
 
 function clock(seconds: number): string {
@@ -40,16 +30,9 @@ function clock(seconds: number): string {
  */
 export default function RadioRoom() {
   const radio = useRadio({ watch: true });
-  const [scene, setScene] = useState<Scene>('auto');
-  const [step, setStep] = useState(0);
+  const [scene, setScene] = useState<Scene>('ball');
   const [position, setPosition] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
-
-  useEffect(() => {
-    if (scene !== 'auto') return;
-    const id = window.setTimeout(() => setStep((s) => (s + 1) % rotation.length), rotation[step].seconds * 1000);
-    return () => window.clearTimeout(id);
-  }, [scene, step]);
 
   const trackKey = radio.track?.key;
   useEffect(() => {
@@ -68,13 +51,13 @@ export default function RadioRoom() {
     return () => window.removeEventListener('keydown', onKey);
   }, [showInfo]);
 
-  const shape: Shape = scene === 'auto' ? rotation[step].shape : scene;
   const track = radio.track;
   const info = track?.info;
   const duration = track?.duration ?? 0;
   const links = info
     ? [
         info.youtubeLink && { href: info.youtubeLink, label: 'watch it get made' },
+        info.youtubeChannel && { href: info.youtubeChannel, label: 'collaborator’s youtube channel' },
         info.youtubePlaylist && { href: info.youtubePlaylist, label: 'youtube playlist' },
         info.spotifyLink && { href: info.spotifyLink, label: 'spotify' },
         info.colabLink && { href: info.colabLink, label: 'colab notebook' },
@@ -87,26 +70,24 @@ export default function RadioRoom() {
 
   return (
     <main className="flex h-[100svh] flex-col overflow-hidden pt-[var(--header-h)]">
-      {/* ---- the stage: everything that isn't the header or the bar ----
-          `fill` leaves room inside the box for the ring of spectrum bars. */}
+      {/* ---- the stage: everything that isn't the header or the bar ---- */}
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <StageAnchor
-          shape={shape}
+          shape={scene}
           priority={20}
-          fill={0.74}
+          fill={0.9}
+          fallback="unavailable"
           className="absolute left-1/2 top-1/2 aspect-square h-[min(100%,112vw)] -translate-x-1/2 -translate-y-1/2"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/collabage-patch-logo.webp" alt="" className={cn('h-full w-full p-[14%]', shape === 'gary' && 'hidden')} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/gary4live_logo.png" alt="" className={cn('h-full w-full p-[14%]', shape !== 'gary' && 'hidden')} />
+          {scene === 'gary' ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/gary4live_logo.png" alt="" className="h-full w-full p-[5%]" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <div className="h-[70%] w-[70%] rounded-full bg-patch shadow-[0_0_70px_rgb(var(--patch)/0.3)]" />
+            </div>
+          )}
         </StageAnchor>
-
-        {!radio.playing && (
-          <button type="button" onClick={radio.play} className="btn absolute left-1/2 top-1/2 z-40 -ml-[4.5rem] -mt-6 w-36 !text-3xl">
-            <Play size={18} fill="currentColor" /> tune in
-          </button>
-        )}
 
         <div role="group" aria-label="what the ink does" className="absolute inset-x-0 top-1 z-40 flex justify-center gap-1.5 sm:top-2">
           {scenes.map((s) => (
@@ -131,6 +112,7 @@ export default function RadioRoom() {
               <X size={16} />
             </button>
             <p className="label text-patch">about this one</p>
+            {info?.year && <p className="label mt-2 text-ash">{info.year}</p>}
             {info?.description && <p className="mt-2 text-sm text-paper/90">{info.description}</p>}
             {links.length > 0 && (
               <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">

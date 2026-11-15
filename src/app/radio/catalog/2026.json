@@ -1,0 +1,232 @@
+{
+  "folder": "2026",
+  "year": 2026,
+  "fallbackDescription": "made in the bowels of development.",
+  "tracks": [
+    {
+      "file": "billiegasm_yuey2.mp3",
+      "sourceFile": "billiegasm_yuey2.wav",
+      "displayName": "billiegasm yuey 2",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "billiegasm"
+    },
+    {
+      "file": "4_loras_extended.mp3",
+      "sourceFile": "4_loras_extended.wav",
+      "displayName": "4 loras extended",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "automation_yt.mp3",
+      "sourceFile": "automation_yt.wav",
+      "displayName": "automation yt",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "billie_jam_1_firsttry.mp3",
+      "sourceFile": "billie_jam_1_firsttry.wav",
+      "displayName": "billie jam 1 (first try)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "billie-jam-1"
+    },
+    {
+      "file": "billie_jam_1_tooled.mp3",
+      "sourceFile": "billie_jam_1_tooled.wav",
+      "displayName": "billie jam 1 (tooled)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "billie-jam-1"
+    },
+    {
+      "file": "billie_nevergetold.mp3",
+      "sourceFile": "billie_nevergetold.wav",
+      "displayName": "billie never get old",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "billiegasm_yuey.mp3",
+      "sourceFile": "billiegasm_yuey.wav",
+      "displayName": "billiegasm yuey",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "billiegasm"
+    },
+    {
+      "file": "bluey_speedrun.mp3",
+      "sourceFile": "bluey_speedrun.wav",
+      "displayName": "bluey speedrun",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "Cminer_novox.mp3",
+      "sourceFile": "Cminer_novox.wav",
+      "displayName": "Cminer (no vox)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "colors_cleaned_condensed_quieter_vox_and_singlenote.mp3",
+      "sourceFile": "colors_cleaned_condensed_quieter_vox_and_singlenote.wav",
+      "displayName": "colors",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "crawl_the_walls_ok_final_MOREBASS_less_stairs_reverb_LESS_BONGOS_BASSFIX.mp3",
+      "sourceFile": "crawl_the_walls_ok_final_MOREBASS_less_stairs_reverb_LESS_BONGOS_BASSFIX.wav",
+      "displayName": "crawl the walls",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "ditto_1_plus_gary_filled_out_a_little.mp3",
+      "sourceFile": "ditto_1_plus_gary_filled_out_a_little.wav",
+      "displayName": "ditto 1 + gary",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "yuey_n_me_n_billie_thru_the_wormhole.mp3",
+      "sourceFile": "yuey_n_me_n_billie_thru_the_wormhole.wav",
+      "displayName": "yuey n me n billie thru the wormhole",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "yuey-n-me"
+    },
+    {
+      "file": "yuey_n_me_n_billie.mp3",
+      "sourceFile": "yuey_n_me_n_billie.wav",
+      "displayName": "yuey n me n billie",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "yuey-n-me"
+    },
+    {
+      "file": "yuey_n_me_1_final_final.mp3",
+      "sourceFile": "yuey_n_me_1_final_final.wav",
+      "displayName": "yuey n me 1",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "yuey-n-me"
+    },
+    {
+      "file": "yt_demo.mp3",
+      "sourceFile": "yt_demo.wav",
+      "displayName": "yt demo",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "unnecessary_extensions_and_billie.mp3",
+      "sourceFile": "unnecessary_extensions_and_billie.mp3",
+      "displayName": "unnecessary extensions and billie",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "single-song-loras.mp3",
+      "sourceFile": "single-song-loras.wav",
+      "displayName": "single song loras",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "sa3_demo_2_no_billie.mp3",
+      "sourceFile": "sa3_demo_2_no_billie.wav",
+      "displayName": "sa3 demo 2 (no billie)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "ratatat_dankins_jam.mp3",
+      "sourceFile": "ratatat_dankins_jam.wav",
+      "displayName": "ratatat dankins jam",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "momo_billie_never_gettin_older.mp3",
+      "sourceFile": "momo_billie_never_gettin_older.wav",
+      "displayName": "momo billie never gettin older",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "love_is_blue_billied.mp3",
+      "sourceFile": "love_is_blue_billied.wav",
+      "displayName": "love is blue (billied)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "love-is-blue"
+    },
+    {
+      "file": "love_is_blue_olivered.mp3",
+      "sourceFile": "love_is_blue_olivered.wav",
+      "displayName": "love is blue (olivered)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "love-is-blue"
+    },
+    {
+      "file": "keygen-infinity.mp3",
+      "sourceFile": "keygen-infinity.wav",
+      "displayName": "keygen infinity",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "infinite_gooning.mp3",
+      "sourceFile": "infinite_gooning.wav",
+      "displayName": "infinite gooning",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "in_the_room_goon_plus_billie.mp3",
+      "sourceFile": "in_the_room_goon_plus_billie.wav",
+      "displayName": "in the room goon + billie",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "idontneedaride.mp3",
+      "sourceFile": "idontneedaride.wav",
+      "displayName": "i dont need a ride",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    }
+  ]
+}
