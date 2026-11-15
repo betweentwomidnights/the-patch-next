@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { SPONSORS_URL } from '../../../lib/links';
 import { getProduct } from '../../../lib/catalog';
@@ -9,6 +9,7 @@ import PayWhatYouWant from '../PayWhatYouWant';
 import LazyVideo from '../../../components/media/LazyVideo';
 import DemoCarousel, { type Demo } from '../../../components/media/DemoCarousel';
 import BackendStatus from '../../../components/BackendStatus';
+import SoftwareCopy from '../../../components/site/SoftwareCopy';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,7 @@ interface Props {
 
 export function generateMetadata({ params }: Props): Metadata {
   const product = getProduct(params.slug);
-  if (!product) return {};
+  if (!product || product.stores?.length) return {};
   return { title: `${product.name} · the patch`, description: product.tagline };
 }
 
@@ -39,6 +40,7 @@ const gary4juceDemos: Demo[] = [
 export default function ProductPage({ params, searchParams }: Props) {
   const product = getProduct(params.slug);
   if (!product) notFound();
+  if (product.stores?.length) redirect(`/products#${product.slug}`);
   const isGary = product.slug === 'gary4juce';
 
   return (
@@ -47,7 +49,7 @@ export default function ProductPage({ params, searchParams }: Props) {
         ← software
       </Link>
       <h1 className="loud mt-4 text-5xl sm:text-7xl">{product.name}</h1>
-      <p className="mt-3 max-w-prose text-lg text-paper/90">{product.tagline}</p>
+      <p className="mt-3 max-w-prose text-lg text-paper/90"><SoftwareCopy>{product.tagline}</SoftwareCopy></p>
 
       <div className="mt-10 grid items-start gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         {/* ---- what it is ---- */}
@@ -71,9 +73,16 @@ export default function ProductPage({ params, searchParams }: Props) {
 
           <div className="mt-8 max-w-prose space-y-4 text-base leading-relaxed">
             {product.about.map((para) => (
-              <p key={para}>{para}</p>
+              <p key={para}><SoftwareCopy>{para}</SoftwareCopy></p>
             ))}
           </div>
+
+          {product.slug === 'gary4local' && (
+            <p className="mt-4 max-w-prose text-sm text-ash">
+              for a more advanced training setup, explore the{' '}
+              <Link href="/products#community-repos" className="link">open source repos we love</Link>.
+            </p>
+          )}
 
           {isGary && (
             <>

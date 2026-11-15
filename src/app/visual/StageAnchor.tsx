@@ -12,16 +12,19 @@ interface StageAnchorProps {
   /** Fraction of the box's smaller side the ink's stage fills. */
   fill?: number;
   className?: string;
+  /** Show static content only if animation is unavailable, or until the image forms. */
+  fallback?: 'unavailable' | 'until-formed';
   /**
    * What to show when the particles aren't here (no engine, reduced motion,
-   * still loading, or scrolled away). Faded out once the ink has formed the
-   * same picture in its place.
+   * still loading, or scrolled away). By default it fades out once the ink
+   * forms the picture. `fallback="unavailable"` keeps it hidden during boot
+   * and animation, so the picture emerges entirely from particles.
    */
   children?: React.ReactNode;
 }
 
 /** Marks a spot on the page where the ink should go and what it should become. */
-export default function StageAnchor({ shape, priority = 10, fill = 1, className, children }: StageAnchorProps) {
+export default function StageAnchor({ shape, priority = 10, fill = 1, className, fallback = 'until-formed', children }: StageAnchorProps) {
   const ref = useRef<HTMLDivElement>(null);
   const anchorRef = useRef<Anchor | null>(null);
 
@@ -47,20 +50,29 @@ export default function StageAnchor({ shape, priority = 10, fill = 1, className,
     () => false,
   );
 
-  const engineOn = useSyncExternalStore(
+  const engine = useSyncExternalStore(
     subscribeStage,
-    () => getStageStatus().engine !== 'none',
-    () => false,
+    () => getStageStatus().engine,
+    () => 'pending' as const,
   );
+  const engineOn = engine === 'webgpu' || engine === 'webgl2';
   // A ball has no picture to match, so its fallback goes as soon as there's ink at all.
-  const hideFallback = shape === 'ball' ? engineOn : formedHere;
+  const hideFallback = fallback === 'unavailable' ? engine !== 'none' : shape === 'ball' ? engineOn : formedHere;
 
   return (
     <div ref={ref} className={cn('relative', className)}>
       {children && (
-        <div className={cn('h-full w-full transition-opacity duration-500', hideFallback ? 'opacity-0' : 'opacity-100')}>
+        <div className={cn(
+          'h-full w-full',
+          fallback === 'unavailable'
+            ? hideFallback && 'invisible motion-reduce:visible'
+            : ['transition-opacity duration-500', hideFallback ? 'opacity-0' : 'opacity-100'],
+        )}>
           {children}
         </div>
+      )}
+      {children && fallback === 'unavailable' && (
+        <noscript><div className="absolute inset-0">{children}</div></noscript>
       )}
     </div>
   );

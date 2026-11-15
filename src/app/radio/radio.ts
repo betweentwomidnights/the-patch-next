@@ -3,12 +3,17 @@
 // The server (server.js + AudioStateManager.js) decides what is playing and
 // where in the track "now" is; everyone who tunes in hears the same thing.
 // This file follows that clock: it asks /api/stream/state where we are, plays
-// /api/audio/<folder>/<file> from that position, listens on socket.io for the
-// next track, and nudges playback back in line if it drifts.
+// /api/audio/<folder>/<file> from that position, and rejoins the station
+// after a substantial stall.
+//
+// Track changes: each track is played to its own end and the next one is
+// started from its first sample. The server says what's next in the same
+// state answer during a track's last five seconds, so polling is enough.
+// (The server also has a socket.io announcement, but its namespace has never
+// accepted connections, so nothing here depends on it.)
 //
 // Because it lives outside any page, the music keeps going while you browse.
 
-import { io, type Socket } from 'socket.io-client';
 import trackInfo from '../components/NowPlaying/trackInfo';
 import type { TrackInfo } from '../types/track';
 import { FeatureExtractor, setExtractor, setListening } from '../visual/features';
@@ -46,6 +51,14 @@ export interface RadioSnapshot {
 
 const OFF: RadioSnapshot = { status: 'off', tunedIn: false, track: null, listeners: 0 };
 
+/**
+ * How long the picture takes to answer a sound, in seconds: reading the
+ * analyser, drawing, and the ink getting under way. The speakers are held
+ * back by this much so the two arrive together (see ensureGraph). Raise it
+ * if the ink still looks late, lower it if it looks early.
+ */
+const LOOKAHEAD = 0.07;
+
 const audioUrl = (folder: string, file: string) => `/api/audio/${encodeURIComponent(folder)}/${encodeURIComponent(file)}`;
 
 function prettyName(file: string): string {
@@ -58,9 +71,8 @@ class Radio {
 
   private audio: HTMLAudioElement | null = null;
   private ctx: AudioContext | null = null;
-  private socket: Socket | null = null;
   private timer: number | null = null;
-  private switchTimer: number | null = null;
+  private analysisDelay: DelayNode | null = null;
 
   private state: StreamState | null = null;
   // Server clock minus ours, in ms. Every answer from the server gives an
@@ -72,8 +84,12 @@ class Radio {
   private clockOffset = 0;
   private offsetRtt = Infinity;
   private offsetAt = 0;
-  /** The track the server last told us was coming next. */
-  private announced: string | null = null;
+  /** What plays after the loaded track, once the server has said. */
+  private next: { folder: string; file: string } | null = null;
+  /** The track we just played out. The server may still be on it for a moment. */
+  private finishedKey: string | null = null;
+  /** Our track has ended and we don't know yet what follows. */
+  private waiting = false;
   private loadedKey: string | null = null;
   private wantPlaying = false;
   private watching = 0;
@@ -118,6 +134,12 @@ class Radio {
     return Math.max(0, duration > 0 ? Math.min(at, duration) : at);
   }
 
+  private describe(folder: string, file: string, duration: number): RadioTrack {
+    const key = `${folder}/${file}`;
+    const info = (trackInfo as Record<string, TrackInfo>)[key] ?? null;
+    return { key, folder, file, title: info?.displayName ?? prettyName(file), info, duration };
+  }
+
   private async fetchState(): Promise<StreamState | null> {
     try {
       const t0 = this.localNow();
@@ -135,18 +157,9 @@ class Radio {
       this.state = state;
       if (state.folder && state.file) {
         const key = `${state.folder}/${state.file}`;
-        const info = (trackInfo as Record<string, TrackInfo>)[key] ?? null;
-        this.set({
-          listeners: state.listeners ?? 0,
-          track: {
-            key,
-            folder: state.folder,
-            file: state.file,
-            title: info?.displayName ?? prettyName(state.file),
-            info,
-            duration: state.duration ?? 0,
-          },
-        });
+        // If we've already moved on from this track, keep showing ours.
+        if (key === this.finishedKey && this.loadedKey !== key) this.set({ listeners: state.listeners ?? 0 });
+        else this.set({ listeners: state.listeners ?? 0, track: this.describe(state.folder, state.file, state.duration ?? 0) });
       }
       return state;
     } catch {
@@ -155,46 +168,102 @@ class Radio {
   }
 
   /** Bring the audio element in line with the server. */
-  private async sync(force = false): Promise<void> {
+  private async sync(): Promise<void> {
     const state = await this.fetchState();
     const audio = this.audio;
     if (!state || !state.folder || !state.file || !audio || !this.wantPlaying) return;
     const key = `${state.folder}/${state.file}`;
     const duration = state.duration ?? 0;
+    this.matchLatency();
 
-    if (key !== this.loadedKey || force) {
-      // We may already be on the next track (the server announced it) while
-      // the server is still wrapping up this one. Don't go back.
-      if (this.loadedKey === this.announced && duration > 0 && this.position() > duration - 8) return;
-      // The server holds a finished track for a moment before moving on.
-      if (duration > 0 && this.position() >= duration - 0.25) return;
-      await this.load(state.folder, state.file, () => this.position());
+    if (key === this.loadedKey) {
+      this.finishedKey = null;
+      if (state.nextTrack) this.next = { folder: state.nextTrack.folder, file: state.nextTrack.file };
+      if (audio.ended || this.waiting) {
+        // We reached the end before the server did. Start what's next if we
+        // know it. (If the server has gone round to this same file again,
+        // rejoin it where it is.) Never press play on an ended track: that
+        // starts it over from the top.
+        if (this.next) this.startNext();
+        else if (this.position() < duration - 8) void this.load(state.folder, state.file, () => this.position());
+        return;
+      }
+      if (!audio.seeking && audio.readyState >= 2) {
+        if (audio.paused) audio.play().catch(() => undefined);
+        this.steer(audio, duration);
+      }
       return;
     }
-    if (this.wantPlaying && !audio.seeking && audio.readyState >= 2) {
-      if (audio.paused) audio.play().catch(() => undefined);
-      this.steer(audio, duration);
+
+    // ---- the server is on a different track from us ----
+    if (key === this.finishedKey) {
+      // It's still wrapping up the one we've already finished: we're a touch
+      // ahead of it, which is fine.
+      if (this.waiting && state.nextTrack) {
+        this.next = { folder: state.nextTrack.folder, file: state.nextTrack.file };
+        this.startNext();
+      }
+      return;
     }
+    const there = { folder: state.folder, file: state.file };
+    if (this.waiting) {
+      // Ours is over and this is what followed it. From the top, unless the
+      // server is already well into it (we must have stalled).
+      this.next = there;
+      this.startNext(this.position() < 12 ? undefined : () => this.position());
+      return;
+    }
+    const tail = Number.isFinite(audio.duration) ? audio.duration - audio.currentTime : Infinity;
+    if (this.loadedKey && !audio.ended && !audio.paused && tail < 14) {
+      // We're a little behind and still playing out the last seconds. Let
+      // them finish; `ended` will start this one from its beginning.
+      this.next = there;
+      return;
+    }
+    // Just tuned in, or badly out of step: join the station where it is.
+    await this.load(state.folder, state.file, () => this.position());
+  }
+
+  /** Our track finished: move on. */
+  private onEnded(): void {
+    if (!this.wantPlaying) return;
+    this.finishedKey = this.loadedKey;
+    if (this.next) {
+      this.startNext();
+    } else {
+      this.waiting = true;
+      void this.sync().then(() => this.schedule());
+    }
+  }
+
+  private startNext(position: () => number = () => 0): void {
+    const next = this.next;
+    if (!next) return;
+    this.next = null;
+    this.waiting = false;
+    // Say what's on now; the server will fill in the length when it catches up.
+    if (this.snapshot.track?.key !== `${next.folder}/${next.file}`) this.set({ track: this.describe(next.folder, next.file, 0) });
+    void this.load(next.folder, next.file, position);
   }
 
   /**
    * Keep in step with the station without the listener hearing it happen.
-   * Being a couple of seconds off from everyone else doesn't matter; a seek
-   * does, it's an audible skip. So: within two seconds, leave it alone.
-   * Further out, play 2.5% fast or slow until it's back. Only jump when it's
-   * far gone (after a long stall, or a laptop waking up).
+   * Being a few seconds off from everyone else doesn't matter; a seek
+   * does, it's an audible skip. Leave ordinary clock drift alone.
+   * Keep playback at its native rate: changing speed invokes the browser's
+   * pitch correction and can smear music. Only seek after a substantial
+   * stall or a laptop waking up.
    */
   private steer(audio: HTMLAudioElement, duration: number): void {
     const target = this.position();
     const drift = audio.currentTime - target; // positive: we're ahead
     const off = Math.abs(drift);
-    if (off > 6 && target < duration - 2) {
-      audio.playbackRate = 1;
+    if (audio.playbackRate !== 1) audio.playbackRate = 1;
+    // The threshold is generous on purpose. Playing tracks back to back we
+    // settle a few seconds ahead of the server (it pauses for a moment
+    // between tracks, we don't), and that must never trigger a jump.
+    if (off > 10 && target < duration - 12) {
       audio.currentTime = target;
-    } else if (off > 2) {
-      audio.playbackRate = drift > 0 ? 0.975 : 1.025;
-    } else if (off < 0.5 && audio.playbackRate !== 1) {
-      audio.playbackRate = 1;
     }
   }
 
@@ -202,6 +271,8 @@ class Radio {
     const audio = this.audio;
     if (!audio) return Promise.resolve();
     this.loadedKey = `${folder}/${file}`;
+    this.next = null;
+    this.waiting = false;
     return new Promise((resolve) => {
       const onMeta = () => {
         audio.removeEventListener('loadedmetadata', onMeta);
@@ -221,29 +292,12 @@ class Radio {
   private schedule(): void {
     if (this.timer !== null) window.clearTimeout(this.timer);
     if (!this.snapshot.tunedIn && this.watching === 0) return;
-    const delay = this.wantPlaying ? 2000 : 12000;
+    // Between tracks, ask often: the answer is what we're waiting on.
+    const delay = this.waiting && this.wantPlaying ? 400 : this.wantPlaying ? 2000 : 12000;
     this.timer = window.setTimeout(async () => {
       if (!document.hidden || this.wantPlaying) await this.sync();
       this.schedule();
     }, delay);
-  }
-
-  private ensureSocket(): void {
-    if (this.socket) return;
-    this.socket = io('/stream');
-    // The server announces the next track about five seconds early, with the
-    // moment (its clock) it will start.
-    this.socket.on('trackChange', (data: { nextTrack?: { folder: string; file: string; startTime: number } }) => {
-      const next = data?.nextTrack;
-      if (!next) return;
-      const startsAt = next.startTime - this.clockOffset; // on our clock
-      if (this.switchTimer !== null) window.clearTimeout(this.switchTimer);
-      this.switchTimer = window.setTimeout(() => {
-        if (!this.wantPlaying) return;
-        this.announced = `${next.folder}/${next.file}`;
-        void this.load(next.folder, next.file, () => Math.max(0, (this.localNow() - startsAt) / 1000));
-      }, Math.max(0, startsAt - this.localNow()));
-    });
   }
 
   private ensureAudio(): HTMLAudioElement {
@@ -257,7 +311,7 @@ class Radio {
     audio.addEventListener('pause', () => {
       if (!this.wantPlaying) this.set({ status: 'paused' });
     });
-    audio.addEventListener('ended', () => void this.sync());
+    audio.addEventListener('ended', () => this.onEnded());
     audio.addEventListener('error', () => {
       if (!this.wantPlaying) return;
       this.loadedKey = null;
@@ -267,7 +321,23 @@ class Radio {
     return audio;
   }
 
-  /** Route the audio through analysers so the visuals can hear it. */
+  /**
+   * Route the audio through analysers so the visuals can hear it, and line
+   * the two up in time.
+   *
+   * Left alone they don't line up, in two ways. The analysers see a sample
+   * the instant it enters the graph, but the listener hears it one output
+   * latency later (tens of milliseconds, far more on bluetooth), so the
+   * picture runs ahead of the sound. And the picture itself is slow to
+   * answer: a frame to read the analyser, a frame or two to draw, and ink
+   * that has to physically start moving.
+   *
+   * So there are two delays. The analysers listen through one equal to the
+   * output latency, which puts them exactly where the speakers are. And the
+   * speakers get the sound LOOKAHEAD later than that, which gives the ink a
+   * head start the size of its own reaction time. Nobody can hear a radio
+   * being 70ms late; everybody can see a kick landing late.
+   */
   private ensureGraph(audio: HTMLAudioElement): void {
     if (this.ctx) {
       void this.ctx.resume();
@@ -275,23 +345,51 @@ class Radio {
     }
     try {
       const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      const ctx = new Ctor();
+      const ctx = new Ctor({ latencyHint: 'playback' });
       const source = ctx.createMediaElementSource(audio);
+
+      // A whole number of render blocks, so the delay copies samples exactly
+      // instead of interpolating between them. Set once and never moved:
+      // changing a delay you can hear bends the pitch.
+      const block = 128 / ctx.sampleRate;
+      const heard = ctx.createDelay(1);
+      heard.delayTime.value = Math.round(LOOKAHEAD / block) * block;
+      source.connect(heard).connect(ctx.destination);
+
+      const seen = ctx.createDelay(1);
+      seen.delayTime.value = 0;
       const smooth = ctx.createAnalyser();
       smooth.fftSize = 2048;
       smooth.smoothingTimeConstant = 0.35;
       const fast = ctx.createAnalyser();
       fast.fftSize = 1024;
       fast.smoothingTimeConstant = 0;
-      source.connect(ctx.destination);
-      source.connect(smooth);
-      source.connect(fast);
+      source.connect(seen);
+      seen.connect(smooth);
+      seen.connect(fast);
       setExtractor(new FeatureExtractor(smooth, fast));
+
       this.ctx = ctx;
-      void ctx.resume();
+      this.analysisDelay = seen;
+      void ctx.resume().then(() => this.matchLatency());
     } catch (err) {
       // No analysis is fine: the radio still plays, the ink just doesn't dance.
       console.warn('[radio] audio analysis unavailable:', err);
+    }
+  }
+
+  /**
+   * Keep the analysers' delay equal to the output latency. The browser only
+   * knows the real figure once sound is flowing, and it changes when the
+   * listener switches speakers, so this is called again every sync. Moving
+   * this delay is inaudible: nothing downstream of it reaches the speakers.
+   */
+  private matchLatency(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.analysisDelay) return;
+    const latency = Math.min(0.9, Math.max(0, (ctx.baseLatency || 0) + (ctx.outputLatency || 0)));
+    if (Math.abs(latency - this.analysisDelay.delayTime.value) > 0.004) {
+      this.analysisDelay.delayTime.setTargetAtTime(latency, ctx.currentTime, 0.05);
     }
   }
 
@@ -330,7 +428,6 @@ class Radio {
     this.wantPlaying = true;
     const audio = this.ensureAudio();
     this.ensureGraph(audio);
-    this.ensureSocket();
     this.set({ tunedIn: true, status: 'loading' });
     if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () => this.play());
@@ -342,7 +439,7 @@ class Radio {
     if (s?.folder && s.file && this.loadedKey !== `${s.folder}/${s.file}`) {
       const duration = s.duration ?? 0;
       if (!(duration > 0 && this.position() >= duration - 0.25)) void this.load(s.folder, s.file, () => this.position());
-    } else if (this.loadedKey) {
+    } else if (this.loadedKey && !audio.ended) {
       audio.play().catch(() => undefined);
     }
     // A couple of extra quick looks at the server's clock, so the estimate

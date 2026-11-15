@@ -1,0 +1,277 @@
+{
+  "folder": "development",
+  "year": null,
+  "fallbackDescription": "made in the bowels of development.",
+  "tracks": [
+    {
+      "file": "WHOKNOWS_26_squashed_and_merged.mp3",
+      "sourceFile": "WHOKNOWS_26_squashed_and_merged.wav",
+      "displayName": "whoknows 26",
+      "description": "a collab with @adamjg18 on youtube.",
+      "youtubeLink": "",
+      "youtubeChannel": "https://www.youtube.com/@adamjg18",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "kurt_instrumental.mp3",
+      "sourceFile": "kurt_instrumental.wav",
+      "displayName": "kurt instrumental",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "ldt_12_pearljam.mp3",
+      "sourceFile": "ldt_12_pearljam.wav",
+      "displayName": "let's destroy that, ep. 12 (pearl jam)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "lets-destroy-that"
+    },
+    {
+      "file": "ldt_13_seasons.mp3",
+      "sourceFile": "ldt_13_seasons.wav",
+      "displayName": "let's destroy that, ep. 13 (seasons)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "lets-destroy-that"
+    },
+    {
+      "file": "ldt_14_leftovers.mp3",
+      "sourceFile": "ldt_14_leftovers.wav",
+      "displayName": "let's destroy that, ep. 14 (leftovers)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "lets-destroy-that"
+    },
+    {
+      "file": "ldt_15.mp3",
+      "sourceFile": "ldt_15.wav",
+      "displayName": "let's destroy that, ep. 15",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "lets-destroy-that"
+    },
+    {
+      "file": "not a demo.mp3",
+      "sourceFile": "not a demo.wav",
+      "displayName": "not a demo",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "nuh_uh.mp3",
+      "sourceFile": "nuh_uh.mp3",
+      "displayName": "nuh uh",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "poompkins.mp3",
+      "sourceFile": "poompkins.wav",
+      "displayName": "poompkins",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "speedruns_5_toms.mp3",
+      "sourceFile": "speedruns_5_toms.wav",
+      "displayName": "speedruns 5 toms",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "cc_3_20_OFFCAMERA_playtime.mp3",
+      "sourceFile": "cc_3_20_OFFCAMERA_playtime.wav",
+      "displayName": "captains chair s3 ep. 20 (off camera playtime)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_3.mp3",
+      "sourceFile": "cc3_3.wav",
+      "displayName": "captains chair s3 ep. 3",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_6.mp3",
+      "sourceFile": "cc3_6.wav",
+      "displayName": "captains chair s3 ep. 6",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_7.mp3",
+      "sourceFile": "cc3_7.wav",
+      "displayName": "captains chair s3 ep. 7",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_15.mp3",
+      "sourceFile": "cc3_15.wav",
+      "displayName": "captains chair s3 ep. 15",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_16-catch_peaks.mp3",
+      "sourceFile": "cc3_16-catch_peaks.wav",
+      "displayName": "captains chair s3 ep. 16 (catch peaks)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_17-beatening.mp3",
+      "sourceFile": "cc3_17-beatening.wav",
+      "displayName": "captains chair s3 ep. 17 (beatening)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_21_notdone.mp3",
+      "sourceFile": "cc3_21_notdone.wav",
+      "displayName": "captains chair s3 ep. 21",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_23_grrr_v4.mp3",
+      "sourceFile": "cc3_23_grrr_v4.wav",
+      "displayName": "captains chair s3 ep. 23 (grrr)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "hudson_freeman.mp3",
+      "sourceFile": "hudson_freeman.wav",
+      "displayName": "hudson freeman",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "kk_10_25_arms_folded.mp3",
+      "sourceFile": "kk_10_25_arms_folded.wav",
+      "displayName": "kk 10 25 (arms folded)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "cc3_16_tooled.mp3",
+      "sourceFile": "cc3_16_tooled.mp3",
+      "displayName": "captains chair s3 ep. 16 (tooled)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_15_tellemwhatiwannasay.mp3",
+      "sourceFile": "cc3_15_tellemwhatiwannasay.wav",
+      "displayName": "captains chair s3 ep. 15 (tell em what i wanna say)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_23_aced_based.mp3",
+      "sourceFile": "cc3_23_aced_based.wav",
+      "displayName": "captains chair s3 ep. 23 (aced based)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "doms_track_worktheline.mp3",
+      "sourceFile": "doms_track_worktheline.mp3",
+      "displayName": "doms track (work the line)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "hammeron_billie.mp3",
+      "sourceFile": "hammeron_billie.wav",
+      "displayName": "hammeron billie",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed"
+    },
+    {
+      "file": "netrunner_4_mac_quayle.mp3",
+      "sourceFile": "netrunner_4_mac_quayle.wav",
+      "displayName": "netrunner 4 (mac quayle)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "netrunner"
+    },
+    {
+      "file": "netrunner2.mp3",
+      "sourceFile": "netrunner2.wav",
+      "displayName": "netrunner 2",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "netrunner"
+    },
+    {
+      "file": "cc3_10_kevinmustbeworkinggraveyard.mp3",
+      "sourceFile": "cc3_10_kevinmustbeworkinggraveyard.wav",
+      "displayName": "captains chair s3 ep. 10 (kevin must be working graveyard)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_10_continued_BASED_2.mp3",
+      "sourceFile": "cc3_10_continued_BASED_2.wav",
+      "displayName": "captains chair s3 ep. 10 (continued based 2)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    },
+    {
+      "file": "cc3_10_mynameisjohn_continuation3.mp3",
+      "sourceFile": "mynameisjohn_continuation3.wav",
+      "displayName": "captains chair s3 ep. 10 (my name is john, continuation 3)",
+      "description": "",
+      "youtubeLink": "",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s3"
+    }
+  ]
+}

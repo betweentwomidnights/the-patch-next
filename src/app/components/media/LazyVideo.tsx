@@ -19,6 +19,7 @@ interface LazyVideoProps {
  */
 export default function LazyVideo({ src, poster, label, className, mode = 'loop' }: LazyVideoProps) {
   const ref = useRef<HTMLVideoElement>(null);
+  const visible = useRef(false);
   const [near, setNear] = useState(false);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function LazyVideo({ src, poster, label, className, mode = 'loop'
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const io = new IntersectionObserver(
       ([entry]) => {
+        visible.current = entry.isIntersecting;
         if (entry.isIntersecting) setNear(true);
         if (mode !== 'loop') {
           if (!entry.isIntersecting && !video.paused) video.pause();
@@ -53,6 +55,13 @@ export default function LazyVideo({ src, poster, label, className, mode = 'loop'
       muted={mode === 'loop'}
       loop={mode === 'loop'}
       controls={mode === 'player'}
+      onLoadedData={(e) => {
+        // The first intersection can happen before React attaches src.
+        // Retry once the first frame is ready, provided the loop is still visible.
+        if (mode === 'loop' && visible.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          e.currentTarget.play().catch(() => undefined);
+        }
+      }}
       onPlay={(e) => {
         if (!e.currentTarget.muted) getRadio().pause();
       }}

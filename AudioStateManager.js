@@ -1,8 +1,10 @@
-// audioStateManager.js
 const path = require('path');
-const fs = require('fs').promises; // Using promises version for async operations
+const fs = require('fs').promises;
 const ffmpeg = require('fluent-ffmpeg');
 const io = require('socket.io');
+const { RadioRotation, stationTracks } = require('./radio-playlist');
+const collections = require('./src/app/radio/catalog');
+const rotationConfig = require('./radio-rotation.json');
 
 // Simple LRU Cache implementation
 class LRUCache {
@@ -43,28 +45,13 @@ class LRUCache {
 }
 
 class AudioStateManager {
-    constructor() {
-        this.currentState = {
-            folder: null,
-            file: null,
-            startTime: null,
-            duration: null,
-            listeners: 0
-        };
-        
-        this.playlist = {
-            folders: [],
-            currentFolder: null,
-            tracks: [],
-            currentTrack: 0,
-            startTime: null,
-            playbackOrder: 'sequential'
-        };
-        
-        // Initialize caches
-        this.metadataCache = new LRUCache(100); // Cache for file metadata
-        this.durationCache = new LRUCache(100);  // Cache for audio durations
-        
+    constructor({ config = rotationConfig, random = Math.random, isEligible, now = Date.now } = {}) {
+        this.currentState = { folder: null, file: null, startTime: null, duration: null, listeners: 0 };
+        this.rotationOptions = { config, random, isEligible };
+        this.now = now;
+        this.folders = [];
+        this.rotation = null;
+        this.durationCache = new LRUCache(100);
         this.nextTrack = null;
         this.isTrackSwitchInProgress = false;
         this.io = null;
@@ -72,97 +59,34 @@ class AudioStateManager {
 
     initializeSocket(server) {
         this.io = io(server);
-        
-        this.io.of('/stream').on('connection', (socket) => {
-            console.log('Client connected to stream');
+        this.io.of('/stream').on('connection', socket => {
             this.addListener();
-            
-            socket.on('disconnect', () => {
-                this.removeListener();
-            });
+            socket.on('disconnect', () => this.removeListener());
         });
     }
 
     async scanAudioFolders() {
         const audioPath = path.join(process.cwd(), 'public', 'audio');
-        try {
-            const folders = await fs.readdir(audioPath);
-            this.playlist.folders = [];
-            
-            // Process all folders concurrently
-            const folderPromises = folders.map(async folder => {
-                const folderPath = path.join(audioPath, folder);
-                try {
-                    const stats = await fs.stat(folderPath);
-                    if (stats.isDirectory()) {
-                        const files = await fs.readdir(folderPath);
-                        const audioFiles = files.filter(file => 
-                            file.endsWith('.mp3') || file.endsWith('.wav')
-                        );
-                        
-                        if (audioFiles.length > 0) {
-                            // Cache folder metadata
-                            const folderMetadata = {
-                                name: folder,
-                                files: audioFiles
-                            };
-                            this.metadataCache.set(`folder:${folder}`, folderMetadata);
-                            return folderMetadata;
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error processing folder ${folder}:`, error);
-                }
-                return null;
-            });
-
-            const processedFolders = (await Promise.all(folderPromises)).filter(Boolean);
-            this.playlist.folders = processedFolders;
-            return processedFolders;
-            
-        } catch (error) {
-            console.error('Error scanning audio folders:', error);
-            throw error;
-        }
+        const names = await fs.readdir(audioPath);
+        const folders = await Promise.all(names.map(async name => {
+            const folderPath = path.join(audioPath, name);
+            if (!(await fs.stat(folderPath)).isDirectory()) return null;
+            const files = (await fs.readdir(folderPath)).filter(file => /\.(mp3|wav)$/i.test(file));
+            return files.length ? { name, files } : null;
+        }));
+        this.configureRotation(folders.filter(Boolean));
+        return this.folders;
     }
 
-    async loadFolderTracks(folderName) {
-        // Check cache first
-        const cachedFolder = this.metadataCache.get(`folder:${folderName}`);
-        if (cachedFolder) {
-            this.playlist.currentFolder = folderName;
-            this.playlist.tracks = cachedFolder.files;
-            this.playlist.currentTrack = 0;
-            this.playlist.startTime = Date.now();
-            
-            // Initialize first track
-            await this.initializeTrack(folderName, cachedFolder.files[0]);
-            return;
-        }
-
-        // If not in cache, load normally
-        const folder = this.playlist.folders.find(f => f.name === folderName);
-        if (!folder) {
-            throw new Error(`Folder ${folderName} not found`);
-        }
-
-        this.playlist.currentFolder = folderName;
-        this.playlist.tracks = folder.files;
-        this.playlist.currentTrack = 0;
-        this.playlist.startTime = Date.now();
-        
-        // Cache the folder data
-        this.metadataCache.set(`folder:${folderName}`, folder);
-        
-        // Initialize first track
-        await this.initializeTrack(folderName, folder.files[0]);
+    configureRotation(folders) {
+        this.folders = folders;
+        this.rotation = new RadioRotation(stationTracks(folders, collections), this.rotationOptions);
     }
 
-    getNextTrack() {
-        if (this.playlist.playbackOrder === 'random') {
-            return Math.floor(Math.random() * this.playlist.tracks.length);
-        }
-        return (this.playlist.currentTrack + 1) % this.playlist.tracks.length;
+    async startRotation() {
+        const track = this.rotation.prepare(this.now());
+        await this.initializeTrack(track.folder, track.file);
+        this.rotation.commit(track);
     }
 
     isTrackSwitching() {
@@ -173,188 +97,90 @@ class AudioStateManager {
         return this.nextTrack;
     }
 
-    async switchFolder() {
-        try {
-            const currentIndex = this.playlist.folders.findIndex(
-                f => f.name === this.playlist.currentFolder
-            );
-            const nextIndex = (currentIndex + 1) % this.playlist.folders.length;
-            const nextFolder = this.playlist.folders[nextIndex];
-            
-            await this.loadFolderTracks(nextFolder.name);
-            console.log(`Switched to folder: ${nextFolder.name}`);
-        } catch (error) {
-            console.error('Error switching folder:', error);
-            throw error;
-        }
-    }
-
     async checkAndUpdateTrack() {
+        if (this.isTrackSwitchInProgress || this.currentState.startTime === null || !this.currentState.duration) return;
+        const nextStartTime = this.currentState.startTime + this.currentState.duration * 1000;
+        if (this.now() < nextStartTime - 5000) return;
+        this.isTrackSwitchInProgress = true;
         try {
-            if (!this.currentState.startTime || !this.currentState.duration) {
-                return;
+            if (!this.nextTrack) {
+                // The intended start time is passed to the policy layer. Future
+                // schedules can check it in the configured timezone, before
+                // weights are applied, without changing the playback clock.
+                const track = this.rotation.prepare(Math.max(this.now(), nextStartTime));
+                this.nextTrack = { folder: track.folder, file: track.file, startTime: nextStartTime };
+                if (this.io) this.io.of('/stream').emit('trackChange', { nextTrack: this.nextTrack });
             }
-    
-            const elapsed = (Date.now() - this.currentState.startTime) / 1000;
-            const duration = this.currentState.duration;
-            const nextTrackIndex = this.getNextTrack();
-            
-            // Notify about upcoming track change
-            if (duration - elapsed <= 5 && !this.nextTrack) {
-                // Calculate next start time
-                console.log('Preparing next track notification');
-                const nextStartTime = Date.now() + ((duration - elapsed) * 1000);
-                
-                if (nextTrackIndex === 0 && this.playlist.currentTrack === this.playlist.tracks.length - 1) {
-                    // Switching folders
-                    const currentIndex = this.playlist.folders.findIndex(
-                        f => f.name === this.playlist.currentFolder
-                    );
-                    const nextIndex = (currentIndex + 1) % this.playlist.folders.length;
-                    const nextFolder = this.playlist.folders[nextIndex];
-                    
-                    this.nextTrack = {
-                        folder: nextFolder.name,
-                        file: nextFolder.files[0],
-                        startTime: nextStartTime
-                    };
-                } else {
-                    // Next track in current folder
-                    this.nextTrack = {
-                        folder: this.playlist.currentFolder,
-                        file: this.playlist.tracks[nextTrackIndex],
-                        startTime: nextStartTime
-                    };
-                }
-                
-                // Notify clients
-                if (this.io) {
-                    this.io.of('/stream').emit('trackChange', { 
-                        nextTrack: this.nextTrack
-                    });
-                }
-            }
-            
-            // Switch track if current one is finished
-            if (elapsed >= duration) {
-                const currentNextTrackIndex = this.getNextTrack();
+            if (this.now() >= nextStartTime) {
+                const track = this.rotation.pending;
+                await this.initializeTrack(track.folder, track.file);
+                this.rotation.commit(track);
                 this.nextTrack = null;
-                
-                if (currentNextTrackIndex === 0 && this.playlist.currentTrack === this.playlist.tracks.length - 1) {
-                    await this.switchFolder();
-                } else {
-                    this.playlist.currentTrack = nextTrackIndex;
-                    await this.initializeTrack(
-                        this.playlist.currentFolder,
-                        this.playlist.tracks[nextTrackIndex]
-                    );
-                }
             }
         } catch (error) {
-            console.error('Error in checkAndUpdateTrack:', error);
-            // Don't throw here - we want the stream to continue even if there's an error
+            // Keep the reservation on a failed load; retry the same announced
+            // song on the next tick instead of silently rerolling it.
+            console.error('Error updating radio track:', error);
+        } finally {
+            this.isTrackSwitchInProgress = false;
         }
-    }
-
-
-    getNowPlaying() {
-        return {
-            folder: this.playlist.currentFolder,
-            track: this.currentState.file,
-            position: this.getCurrentPosition(),
-            duration: this.currentState.duration,
-            timestamp: Date.now(),
-            loopCount: this.currentState.loopCount
-        };
     }
 
     async getAudioDuration(filePath) {
-        // Check duration cache first
-        const cachedDuration = this.durationCache.get(filePath);
-        if (cachedDuration !== null) {
-            return cachedDuration;
-        }
-
-        // If not cached, get duration using ffmpeg
-        try {
-            const duration = await new Promise((resolve, reject) => {
-                ffmpeg.ffprobe(filePath, (err, metadata) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-                    resolve(metadata.format.duration);
-                });
+        const cached = this.durationCache.get(filePath);
+        if (cached !== null) return cached;
+        const duration = await new Promise((resolve, reject) => {
+            ffmpeg.ffprobe(filePath, (error, metadata) => {
+                if (error) return reject(error);
+                const seconds = metadata.format.duration;
+                if (!Number.isFinite(seconds) || seconds <= 0) return reject(new Error(`Invalid duration: ${filePath}`));
+                resolve(seconds);
             });
-
-            // Cache the duration
-            this.durationCache.set(filePath, duration);
-            return duration;
-        } catch (error) {
-            console.error('Error getting duration:', error);
-            throw error;
-        }
+        });
+        this.durationCache.set(filePath, duration);
+        return duration;
     }
 
     async initializeTrack(folder, file) {
         const filePath = path.join(process.cwd(), 'public', 'audio', folder, file);
-        
-        try {
-            const duration = await this.getAudioDuration(filePath);
-            
-            this.currentState = {
-                folder,
-                file,
-                startTime: Date.now(),
-                duration,
-                listeners: 0,
-                loopCount: 0
-            };
-            
-            console.log(`Initialized track: ${file} with duration: ${duration} seconds`);
-            
-        } catch (error) {
-            console.error('Error initializing track:', error);
-            throw error;
-        }
+        const duration = await this.getAudioDuration(filePath);
+        this.currentState = {
+            folder, file, duration, startTime: this.now(),
+            listeners: this.currentState.listeners, loopCount: 0,
+        };
+        console.log(`Initialized track: ${folder}/${file} (${duration}s)`);
     }
 
     getCurrentPosition() {
-        if (!this.currentState.startTime) return 0;
-        const elapsed = (Date.now() - this.currentState.startTime) / 1000;
-        return Math.min(elapsed, this.currentState.duration);
+        if (this.currentState.startTime === null) return 0;
+        return Math.min((this.now() - this.currentState.startTime) / 1000, this.currentState.duration);
     }
 
     getStreamInfo() {
         return {
             ...this.currentState,
             currentPosition: this.getCurrentPosition(),
-            timestamp: Date.now(),
-            nextTrack: this.nextTrack
+            timestamp: this.now(),
+            nextTrack: this.nextTrack,
         };
     }
 
     getNowPlaying() {
         return {
-            folder: this.playlist.currentFolder,
-            track: this.currentState.file,
-            position: this.getCurrentPosition(),
-            duration: this.currentState.duration,
-            timestamp: Date.now()
+            folder: this.currentState.folder, track: this.currentState.file,
+            position: this.getCurrentPosition(), duration: this.currentState.duration,
+            timestamp: this.now(),
         };
     }
 
     addListener() {
         this.currentState.listeners++;
-        console.log(`Listener added. Total listeners: ${this.currentState.listeners}`);
     }
 
     removeListener() {
-        if (this.currentState.listeners > 0) {
-            this.currentState.listeners--;
-            console.log(`Listener removed. Total listeners: ${this.currentState.listeners}`);
-        }
+        if (this.currentState.listeners > 0) this.currentState.listeners--;
     }
 }
 
 module.exports = new AudioStateManager();
+module.exports.AudioStateManager = AudioStateManager;

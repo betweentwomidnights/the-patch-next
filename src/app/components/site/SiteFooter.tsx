@@ -1,11 +1,11 @@
 import SocialMediaButtonGroup from '../SocialButtons';
 import { SupportLinks } from '../SponsorButton';
-import WaveRule from './WaveRule';
+import SectionRule from './SectionRule';
 
 export default function SiteFooter() {
   return (
     <footer className="mt-24 pb-[var(--dock-h)]">
-      <WaveRule seed={7} className="opacity-60" />
+      <SectionRule />
       <div className="mx-auto flex max-w-page flex-col items-center gap-4 px-4 pt-10 text-center">
         <SupportLinks />
         <SocialMediaButtonGroup />

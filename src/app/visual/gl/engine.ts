@@ -27,10 +27,12 @@ uniform vec3 uInk;
 uniform float uBands[16];
 uniform float uPresence;
 uniform float uBandMean;
+uniform float uEmergence;
 
 out vec3 vColor;
 out vec3 vNormal;
 out float vFlat;
+out float vEmergence;
 
 float hash(float x) { return fract(sin(x * 127.1) * 43758.5453); }
 
@@ -77,16 +79,21 @@ void main() {
     pos += kdir * push * uKicks[i].y * jet * (0.5 + hash(seed * 17.3)) * uShape.z * 0.3;
   }
 
-  vec3 view = uRot * pos + vec3(0.0, 0.0, -uCam.z);
+  // Stagger the particles' arrival from the centre. Once open, this is an
+  // identity transform and ordinary shape changes keep their existing flow.
+  float delay = seed * 0.22 + min(length(pos) / uShape.w, 1.0) * 0.12;
+  float opening = smoothstep(delay, 1.0, uEmergence);
+  vec3 view = uRot * (pos * opening) + vec3(0.0, 0.0, -uCam.z);
   float z = -view.z;
   vec2 ndc = vec2(view.x / (z * uCam.x * uCam.y), view.y / (z * uCam.x));
   ndc = ndc * uStage.xy + uStage.zw;
   gl_Position = vec4(ndc, clamp((z - uCam.z * 0.4) / (uCam.z * 1.2), 0.0, 1.0) * 2.0 - 1.0, 1.0);
-  gl_PointSize = max(1.5, uCam.w * (uCam.z / z) * (0.8 + 0.4 * seed));
+  gl_PointSize = max(1.5, uCam.w * (uCam.z / z) * (0.8 + 0.4 * seed)) * sqrt(opening);
 
   vColor = mix(uInk, aColor.rgb, form);
   vNormal = uRot * normalize(mix(nrm, vec3(0.0, 0.0, 1.0), form));
   vFlat = form;
+  vEmergence = opening;
 }
 `;
 
@@ -95,10 +102,12 @@ precision highp float;
 in vec3 vColor;
 in vec3 vNormal;
 in float vFlat;
+in float vEmergence;
 uniform float uDim;
 out vec4 outColor;
 
 void main() {
+  if (vEmergence <= 0.0) discard;
   vec2 c = gl_PointCoord * 2.0 - 1.0;
   if (dot(c, c) > 1.0) discard;
   // the same three flat tones as the fluid: shadow, body, highlight
@@ -188,7 +197,7 @@ class GlEngine implements Engine {
     this.active = count;
     this.prog = program(gl, VS, FS);
     this.glow = program(gl, GLOW_VS, GLOW_FS);
-    for (const name of ['uRot', 'uStage', 'uShape', 'uCam', 'uAudio', 'uKicks', 'uInk', 'uDim', 'uBands', 'uPresence', 'uBandMean']) {
+    for (const name of ['uRot', 'uStage', 'uShape', 'uCam', 'uAudio', 'uKicks', 'uInk', 'uDim', 'uBands', 'uPresence', 'uBandMean', 'uEmergence']) {
       this.u[name] = gl.getUniformLocation(this.prog, name);
     }
     for (const name of ['uStagePx', 'uInk', 'uDim', 'uHeight']) this.g[name] = gl.getUniformLocation(this.glow, name);
@@ -296,7 +305,7 @@ class GlEngine implements Engine {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.useProgram(this.glow);
-    gl.uniform4f(this.g.uStagePx, f.cx, f.cy, f.radius, f.glow);
+    gl.uniform4f(this.g.uStagePx, f.cx, f.cy, f.radius * f.emergence, f.glow);
     gl.uniform3f(this.g.uInk, INK_RED[0], INK_RED[1], INK_RED[2]);
     gl.uniform1f(this.g.uDim, f.dim);
     gl.uniform1f(this.g.uHeight, H);
@@ -315,6 +324,7 @@ class GlEngine implements Engine {
     gl.uniform4fv(this.u.uKicks, this.kicks);
     gl.uniform1fv(this.u.uBands, f.bands);
     gl.uniform1f(this.u.uPresence, f.presence);
+    gl.uniform1f(this.u.uEmergence, f.emergence);
     let bandMean = 0;
     for (let i = 0; i < f.bands.length; i++) bandMean += f.bands[i];
     gl.uniform1f(this.u.uBandMean, bandMean / f.bands.length);

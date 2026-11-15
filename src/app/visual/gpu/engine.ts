@@ -13,7 +13,7 @@ export interface GpuTier {
 
 const REST_DENSITY = 7;
 const SIM_BYTES = 208;
-const VIEW_BYTES = 240;
+const VIEW_BYTES = 176;
 const PARTICLE_FLOATS = 20;
 const FOV_TAN = Math.tan((14 * Math.PI) / 180);
 const FAR_DEPTH = 10000;
@@ -408,14 +408,12 @@ class GpuEngine implements Engine {
     v[20] = W; v[21] = H; v[22] = FOV_TAN; v[23] = W / H;
     v[24] = camDist; v[25] = camDist - this.wallR * 1.8; v[26] = camDist + this.wallR * 1.8; v[27] = f.form;
     v[28] = f.time; v[29] = f.glow; v[30] = f.level; v[31] = f.kick;
-    v[32] = f.cx; v[33] = f.cy; v[34] = f.radius; v[35] = f.dim;
+    v[32] = f.cx; v[33] = f.cy; v[34] = f.radius * f.emergence; v[35] = f.dim;
     v[36] = INK_RED[0]; v[37] = INK_RED[1]; v[38] = INK_RED[2];
     v[39] = Math.max(1, Math.min(2.5, f.radius / 220));
-    // the spectrum ring only belongs on a big stage, and only with music on
-    v[40] = f.presence * Math.min(1, Math.max(0, (f.radius - 110) / 90));
+    v[40] = f.emergence;
     v[41] = f.hat * f.presence;
     v[42] = Math.abs(f.snare) * f.presence;
-    v.set(f.bands, 44);
     device.queue.writeBuffer(this.viewBuf, 0, v);
 
     const blurPx = radius * pxPerUnit * (2.4 * (1 - f.form) + 0.5 * f.form);
