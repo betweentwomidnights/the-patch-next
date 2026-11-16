@@ -16,7 +16,8 @@
 
 import trackInfo from '../components/NowPlaying/trackInfo';
 import type { TrackInfo } from '../types/track';
-import { FeatureExtractor, setExtractor, setListening } from '../visual/features';
+import { FeatureExtractor, pictureDelay, setExtractor, setListening } from '../visual/features';
+import { OutputClock } from './outputClock';
 
 interface StreamState {
   folder: string | null;
@@ -52,12 +53,19 @@ export interface RadioSnapshot {
 const OFF: RadioSnapshot = { status: 'off', tunedIn: false, track: null, listeners: 0 };
 
 /**
- * How long the picture takes to answer a sound, in seconds: reading the
- * analyser, drawing, and the ink getting under way. The speakers are held
- * back by this much so the two arrive together (see ensureGraph). Raise it
- * if the ink still looks late, lower it if it looks early.
+ * How long the speakers are held back, in seconds. Everything the visuals do
+ * in time with the music depends on knowing about a sound before it's heard:
+ * long enough to be sure a kick was a kick, get word of it to the page, and
+ * get a frame through the browser and onto the screen. Nobody can tell a
+ * radio is 150ms late; everybody can see a kick landing late.
  */
-const LOOKAHEAD = 0.07;
+const HOLD = 0.15;
+
+/**
+ * The spectrum bands are smoothed, so they trail the sound by about this
+ * many milliseconds. The analysers are shown the sound that much early.
+ */
+const BAND_LAG = 30;
 
 const audioUrl = (folder: string, file: string) => `/api/audio/${encodeURIComponent(folder)}/${encodeURIComponent(file)}`;
 
@@ -73,6 +81,9 @@ class Radio {
   private ctx: AudioContext | null = null;
   private timer: number | null = null;
   private analysisDelay: DelayNode | null = null;
+  private clock: OutputClock | null = null;
+  private hitsPort: MessagePort | null = null;
+  private clockTimer: number | null = null;
 
   private state: StreamState | null = null;
   // Server clock minus ours, in ms. Every answer from the server gives an
@@ -174,7 +185,6 @@ class Radio {
     if (!state || !state.folder || !state.file || !audio || !this.wantPlaying) return;
     const key = `${state.folder}/${state.file}`;
     const duration = state.duration ?? 0;
-    this.matchLatency();
 
     if (key === this.loadedKey) {
       this.finishedKey = null;
@@ -273,6 +283,9 @@ class Radio {
     this.loadedKey = `${folder}/${file}`;
     this.next = null;
     this.waiting = false;
+    // The hit detector judges each hit against what's usual for the track.
+    // New track, new usual.
+    this.hitsPort?.postMessage('reset');
     return new Promise((resolve) => {
       const onMeta = () => {
         audio.removeEventListener('loadedmetadata', onMeta);
@@ -322,21 +335,22 @@ class Radio {
   }
 
   /**
-   * Route the audio through analysers so the visuals can hear it, and line
-   * the two up in time.
+   * Route the audio through the things that listen for the visuals, and line
+   * picture and sound up in time.
    *
-   * Left alone they don't line up, in two ways. The analysers see a sample
-   * the instant it enters the graph, but the listener hears it one output
-   * latency later (tens of milliseconds, far more on bluetooth), so the
-   * picture runs ahead of the sound. And the picture itself is slow to
-   * answer: a frame to read the analyser, a frame or two to draw, and ink
-   * that has to physically start moving.
+   * The sound takes three paths out of the player:
    *
-   * So there are two delays. The analysers listen through one equal to the
-   * output latency, which puts them exactly where the speakers are. And the
-   * speakers get the sound LOOKAHEAD later than that, which gives the ink a
-   * head start the size of its own reaction time. Nobody can hear a radio
-   * being 70ms late; everybody can see a kick landing late.
+   *   to the speakers, held back by HOLD. That gap is what lets the picture
+   *   be on time rather than chasing the sound.
+   *
+   *   to the hit detector (public/worklets/hits.js), straight away. It
+   *   stamps each drum hit with the audio-clock time it happened; the clock
+   *   below turns that into the moment it will be heard, and the visuals
+   *   hold the hit until the frame that is on screen at that moment.
+   *
+   *   to the analysers (the spectrum), through a delay that is kept such
+   *   that what they show now is what will be heard when the frame being
+   *   drawn now reaches the screen. See tune().
    */
   private ensureGraph(audio: HTMLAudioElement): void {
     if (this.ctx) {
@@ -353,11 +367,12 @@ class Radio {
       // changing a delay you can hear bends the pitch.
       const block = 128 / ctx.sampleRate;
       const heard = ctx.createDelay(1);
-      heard.delayTime.value = Math.round(LOOKAHEAD / block) * block;
+      heard.delayTime.value = Math.round(HOLD / block) * block;
       source.connect(heard).connect(ctx.destination);
+      const clock = new OutputClock(ctx, heard.delayTime.value);
 
       const seen = ctx.createDelay(1);
-      seen.delayTime.value = 0;
+      seen.delayTime.value = heard.delayTime.value;
       const smooth = ctx.createAnalyser();
       smooth.fftSize = 2048;
       smooth.smoothingTimeConstant = 0.35;
@@ -367,29 +382,66 @@ class Radio {
       source.connect(seen);
       seen.connect(smooth);
       seen.connect(fast);
-      setExtractor(new FeatureExtractor(smooth, fast));
+      const extractor = new FeatureExtractor(smooth, fast);
+      setExtractor(extractor);
 
       this.ctx = ctx;
+      this.clock = clock;
       this.analysisDelay = seen;
-      void ctx.resume().then(() => this.matchLatency());
+      void ctx.resume();
+      void this.listenForHits(ctx, source, extractor, clock);
     } catch (err) {
       // No analysis is fine: the radio still plays, the ink just doesn't dance.
       console.warn('[radio] audio analysis unavailable:', err);
     }
   }
 
+  private async listenForHits(ctx: AudioContext, source: AudioNode, extractor: FeatureExtractor, clock: OutputClock): Promise<void> {
+    try {
+      await ctx.audioWorklet.addModule('/worklets/hits.js');
+      const hits = new AudioWorkletNode(ctx, 'hits', { numberOfInputs: 1, numberOfOutputs: 1, channelCount: 2 });
+      // It makes no sound, but some browsers only run a node whose output
+      // leads somewhere, so lead it to the speakers through a closed door.
+      const silent = ctx.createGain();
+      silent.gain.value = 0;
+      source.connect(hits).connect(silent).connect(ctx.destination);
+      extractor.listen(hits.port, clock);
+      this.hitsPort = hits.port;
+    } catch (err) {
+      // Older browsers, or a page not served securely: the extractor keeps
+      // finding hits itself, less exactly.
+      console.warn('[radio] timed hit detection unavailable:', err);
+    }
+  }
+
   /**
-   * Keep the analysers' delay equal to the output latency. The browser only
-   * knows the real figure once sound is flowing, and it changes when the
-   * listener switches speakers, so this is called again every sync. Moving
-   * this delay is inaudible: nothing downstream of it reaches the speakers.
+   * Keep the clock fresh and the analysers pointed at the right moment.
+   *
+   * A sound leaving the player is heard HOLD plus the output latency later.
+   * A frame drawn from the analysers is seen one picture delay later, and
+   * the bands in it are BAND_LAG behind. So the analysers should be reading
+   * the sound that is (picture delay + BAND_LAG) short of being heard.
+   *
+   * The browser only knows its real output latency once sound is flowing,
+   * and it changes when the listener switches speakers, so this runs a few
+   * times a second. Moving this delay is inaudible: nothing downstream of it
+   * reaches the speakers.
    */
-  private matchLatency(): void {
+  private tune(): void {
     const ctx = this.ctx;
-    if (!ctx || !this.analysisDelay) return;
-    const latency = Math.min(0.9, Math.max(0, (ctx.baseLatency || 0) + (ctx.outputLatency || 0)));
-    if (Math.abs(latency - this.analysisDelay.delayTime.value) > 0.004) {
-      this.analysisDelay.delayTime.setTargetAtTime(latency, ctx.currentTime, 0.05);
+    const clock = this.clock;
+    if (!ctx || !clock || !this.analysisDelay) return;
+    clock.sample();
+    const want = Math.min(0.95, Math.max(0, clock.hold + clock.latency() - (pictureDelay() + BAND_LAG) / 1000));
+    if (Math.abs(want - this.analysisDelay.delayTime.value) > 0.004) {
+      this.analysisDelay.delayTime.setTargetAtTime(want, ctx.currentTime, 0.05);
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      (window as unknown as Record<string, unknown>).__clock = {
+        outputLatency: Math.round(clock.latency() * 1000),
+        reported: Math.round(((ctx.baseLatency || 0) + (ctx.outputLatency || 0)) * 1000),
+        analysisDelay: Math.round(want * 1000),
+      };
     }
   }
 
@@ -446,12 +498,15 @@ class Radio {
     // is good before the first note rather than a minute later.
     void this.fetchState();
     void this.sync().then(() => this.schedule());
+    if (this.clockTimer === null) this.clockTimer = window.setInterval(() => this.tune(), 250);
   }
 
   /** Stop the sound. The station carries on; play() rejoins it live. */
   pause(): void {
     this.wantPlaying = false;
     this.audio?.pause();
+    if (this.clockTimer !== null) window.clearInterval(this.clockTimer);
+    this.clockTimer = null;
     this.set({ status: this.snapshot.tunedIn ? 'paused' : 'off' });
     this.schedule();
   }

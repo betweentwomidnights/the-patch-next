@@ -11,6 +11,12 @@ interface StageAnchorProps {
   priority?: number;
   /** Fraction of the box's smaller side the ink's stage fills. */
   fill?: number;
+  /**
+   * Set where the ink has the screen to itself (the radio room). A picture
+   * there goes through moods with the music (see moods.ts) and can smear
+   * well outside its box. Elsewhere it holds still so it never covers the page.
+   */
+  free?: boolean;
   className?: string;
   /** Show static content only if animation is unavailable, or until the image forms. */
   fallback?: 'unavailable' | 'until-formed';
@@ -24,13 +30,13 @@ interface StageAnchorProps {
 }
 
 /** Marks a spot on the page where the ink should go and what it should become. */
-export default function StageAnchor({ shape, priority = 10, fill = 1, className, fallback = 'until-formed', children }: StageAnchorProps) {
+export default function StageAnchor({ shape, priority = 10, fill = 1, free = false, className, fallback = 'until-formed', children }: StageAnchorProps) {
   const ref = useRef<HTMLDivElement>(null);
   const anchorRef = useRef<Anchor | null>(null);
 
   useEffect(() => {
     if (!ref.current) return;
-    const anchor: Anchor = { el: ref.current, shape, priority, fill };
+    const anchor: Anchor = { el: ref.current, shape, priority, fill, free };
     anchorRef.current = anchor;
     return addAnchor(anchor);
     // shape/fill changes are applied below without re-registering
@@ -41,8 +47,9 @@ export default function StageAnchor({ shape, priority = 10, fill = 1, className,
     if (anchorRef.current) {
       anchorRef.current.shape = shape;
       anchorRef.current.fill = fill;
+      anchorRef.current.free = free;
     }
-  }, [shape, fill]);
+  }, [shape, fill, free]);
 
   const formedHere = useSyncExternalStore(
     subscribeStage,

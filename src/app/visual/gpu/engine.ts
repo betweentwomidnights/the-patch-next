@@ -12,7 +12,7 @@ export interface GpuTier {
 }
 
 const REST_DENSITY = 7;
-const SIM_BYTES = 208;
+const SIM_BYTES = 224;
 const VIEW_BYTES = 176;
 const PARTICLE_FLOATS = 20;
 const FOV_TAN = Math.tan((14 * Math.PI) / 180);
@@ -396,6 +396,8 @@ class GpuEngine implements Engine {
     s[34] = 1.15 * f.presence;
     s[35] = bandMean; // lobes push relative to this, so the ball changes shape, not size
     s.set(f.bands, 36);
+    s[52] = f.stir;
+    s[53] = f.grip;
     device.queue.writeBuffer(this.simBuf, 0, this.simData);
 
     // ---- view uniforms ----
