@@ -28,6 +28,9 @@ export default async function PayWhatYouWant({ product, status }: { product: Pro
         {amounts.length > 0 ? `${amounts.join(' · ')}${price?.taxInclusive ? ', tax included' : ''}. ` : ''}
         you pick the amount at checkout. stripe handles the payment and the receipt.
       </p>
+      <p className="mt-2 hidden text-sm text-ash [@media(pointer:coarse)]:block">
+        on your phone? you can pay here and download on your computer later. the downloads are free either way.
+      </p>
 
       {status && messages[status] && (
         <p role="alert" className="sketch sketch-quiet mt-4 px-3 py-2 text-sm text-paper/90">

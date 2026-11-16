@@ -77,6 +77,14 @@ export default function ProductPage({ params, searchParams }: Props) {
             ))}
           </div>
 
+          {/* Narrow screens: the side column stacks under everything else, which
+              put the pay button several screens down. Show it here instead. */}
+          {product.stripeLookupKey && (
+            <div className="mt-8 lg:hidden">
+              <PayWhatYouWant product={product} status={searchParams.checkout} />
+            </div>
+          )}
+
           {product.slug === 'gary4local' && (
             <p className="mt-4 max-w-prose text-sm text-ash">
               for a more advanced training setup, explore the{' '}
@@ -117,7 +125,11 @@ export default function ProductPage({ params, searchParams }: Props) {
 
         {/* ---- get it ---- */}
         <aside className="min-w-0 space-y-8 lg:sticky lg:top-[calc(var(--header-h)+1rem)]">
-          {product.stripeLookupKey && <PayWhatYouWant product={product} status={searchParams.checkout} />}
+          {product.stripeLookupKey && (
+            <div className="hidden lg:block">
+              <PayWhatYouWant product={product} status={searchParams.checkout} />
+            </div>
+          )}
 
           <section aria-labelledby="download">
             <h2 id="download" className="loud text-3xl">
