@@ -94,6 +94,17 @@ The look (colours, fonts, the hand-drawn outlines and buttons) is all in
 
 Handy while working on the ink (dev only): `?engine=gl` forces the WebGL fallback,
 `?ink=150000` sets the particle count, and `window.__ink` in the console shows fps.
+On the radio page a formed picture goes through moods with the music
+(`src/app/visual/moods.ts`); `?mood=steady` or `?mood=loose` keeps it in one.
+
+**Picture and sound in time.** Drum hits are found on the audio thread
+(`public/worklets/hits.js`) and each one is held until the frame that is on screen when
+it's heard (`src/app/visual/features.ts`, `src/app/radio/outputClock.ts`). The one thing
+the page can't measure is how long your screen takes to show a frame, so if the ink looks
+consistently early or late on some machine, open any page with `?sync=20` (picture 20ms
+later) or `?sync=-20` (earlier). It's remembered in that browser until you set `?sync=0`,
+and works in production too. In dev, `window.__sync` and `window.__clock` in the console
+show how each hit was timed and what the browser says its output latency is.
 
 ## How deploys work
 

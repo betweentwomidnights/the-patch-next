@@ -76,6 +76,7 @@ export default function RadioRoom() {
           shape={scene}
           priority={20}
           fill={0.9}
+          free
           fallback="unavailable"
           className="absolute left-1/2 top-1/2 aspect-square h-[min(100%,112vw)] -translate-x-1/2 -translate-y-1/2"
         >
