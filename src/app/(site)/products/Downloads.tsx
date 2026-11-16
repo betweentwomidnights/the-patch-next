@@ -18,6 +18,12 @@ export default async function Downloads({ product }: { product: Product }) {
 
   return (
     <div className="space-y-7">
+      {/* Touch devices only: everything here is a desktop installer. */}
+      <p className="sketch sketch-quiet hidden px-4 py-3 text-sm leading-relaxed text-paper/90 [@media(pointer:coarse)]:block">
+        <span className="label mb-1 block text-patch">on a phone or tablet?</span>
+        these are installers for windows and macOS computers. open this page on your computer to download them:{' '}
+        <span className="text-paper [overflow-wrap:anywhere]">thecollabagepatch.com/products/{product.slug}</span>
+      </p>
       {channels.map(({ channel, release, downloads }) => (
         <section key={channel.label}>
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
