@@ -28,6 +28,8 @@ struct Sim {
   fx: vec4f,
   // sixteen spectrum bands, low to high
   bands: array<vec4f, 4>,
+  // a formed picture's mood (see moods.ts): how hard eddies stir it, how firmly it holds
+  mood: vec4f,
 }
 
 struct Particle {
@@ -199,6 +201,19 @@ fn bandAt(u: f32) -> f32 {
   return mix(sim.bands[i / 4u][i % 4u], sim.bands[j / 4u][j % 4u], x - floor(x));
 }
 
+// Two layers of whirlpools sliding across the picture (u is in picture
+// radii). It's the curl of a wavy surface, so particles go round and round
+// rather than piling up, and each one is a little out of step with its
+// neighbours so the picture shimmers instead of bending like a sheet.
+fn eddies(u: vec3f, t: f32, seed: f32) -> vec3f {
+  let a = u.xy * 3.4 + vec2f(t * 0.31, -t * 0.23) + seed * 0.7;
+  let b = u.yx * 6.7 + vec2f(-t * 0.47, t * 0.39) + seed * 1.3;
+  let big = vec2f(sin(a.x) * cos(a.y), -cos(a.x) * sin(a.y));
+  let small = vec2f(sin(b.x) * cos(b.y), -cos(b.x) * sin(b.y));
+  let lift = sin(a.x * 0.7 + a.y * 1.3 + seed * 6.2832 + t * 0.2);
+  return vec3f(big * 0.7 + small.yx * 0.45, lift * 0.35) * 0.55;
+}
+
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
   if (gid.x >= sim.count) { return; }
@@ -253,7 +268,12 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   let tpos = targets[gid.x].pos;
   let ring = (bandAt(length(tpos.xy)) - sim.fx.w) * sim.fx.z;
   let tgt = sim.center + vec3f(tpos.xy * (1.0 + ring * 0.09), tpos.z + max(ring, 0.0) * 0.16) * sim.imgR;
-  a += sim.pull * (sim.springK * (tgt - p.pos) - sim.damping * v);
+
+  // The picture has moods. Eddies drift through it and carry each particle
+  // around its place: a shimmer while the picture holds firm, swirls as the
+  // hold slackens.
+  a += sim.pull * sim.mood.x * eddies(rel / sim.imgR, sim.time, p.seed);
+  a += sim.pull * (sim.springK * sim.mood.y * (tgt - p.pos) - sim.damping * v);
 
   // a kick throws the ink outward in uneven jets; when an image is formed
   // it also comes off the page toward (and away from) the viewer

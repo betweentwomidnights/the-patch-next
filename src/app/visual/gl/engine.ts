@@ -28,6 +28,7 @@ uniform float uBands[16];
 uniform float uPresence;
 uniform float uBandMean;
 uniform float uEmergence;
+uniform vec2 uMood;    // a formed picture's mood: stir, grip (see moods.ts)
 
 out vec3 vColor;
 out vec3 vNormal;
@@ -62,6 +63,15 @@ void main() {
   vec3 ball = b * uShape.z * (1.0 + uAudio.x * 0.14 + lobe * 0.7 * r);
   float ringB = (bandAt(length(aTarget.xy)) - uBandMean) * uPresence;
   vec3 image = vec3(aTarget.xy * (1.0 + ringB * 0.09), aTarget.z) * uShape.w * (1.0 + uAudio.x * 0.05);
+  // The picture's moods. There is no physics here to push around, so this
+  // draws where the WebGPU engine's particles would roughly end up: jostled
+  // by drifting eddies, further as the hold slackens...
+  vec2 e1 = aTarget.xy * 3.4 + vec2(t * 0.31, -t * 0.23) + seed * 0.7;
+  vec2 e2 = aTarget.yx * 6.7 + vec2(-t * 0.47, t * 0.39) + seed * 1.3;
+  vec2 eddy = vec2(sin(e1.x) * cos(e1.y), -cos(e1.x) * sin(e1.y)) * 0.7
+            + vec2(-cos(e2.x) * sin(e2.y), sin(e2.x) * cos(e2.y)) * 0.45;
+  image.xy += eddy * (uMood.x / max(uMood.y, 0.25)) * 0.1 * uShape.w;
+
   vec3 pos = mix(ball, image, uShape.y);
 
   // each recent kick throws the particle out and lets it fall back
@@ -197,7 +207,7 @@ class GlEngine implements Engine {
     this.active = count;
     this.prog = program(gl, VS, FS);
     this.glow = program(gl, GLOW_VS, GLOW_FS);
-    for (const name of ['uRot', 'uStage', 'uShape', 'uCam', 'uAudio', 'uKicks', 'uInk', 'uDim', 'uBands', 'uPresence', 'uBandMean', 'uEmergence']) {
+    for (const name of ['uRot', 'uStage', 'uShape', 'uCam', 'uAudio', 'uKicks', 'uInk', 'uDim', 'uBands', 'uPresence', 'uBandMean', 'uEmergence', 'uMood']) {
       this.u[name] = gl.getUniformLocation(this.prog, name);
     }
     for (const name of ['uStagePx', 'uInk', 'uDim', 'uHeight']) this.g[name] = gl.getUniformLocation(this.glow, name);
@@ -325,6 +335,7 @@ class GlEngine implements Engine {
     gl.uniform1fv(this.u.uBands, f.bands);
     gl.uniform1f(this.u.uPresence, f.presence);
     gl.uniform1f(this.u.uEmergence, f.emergence);
+    gl.uniform2f(this.u.uMood, f.stir, f.grip);
     let bandMean = 0;
     for (let i = 0; i < f.bands.length; i++) bandMean += f.bands[i];
     gl.uniform1f(this.u.uBandMean, bandMean / f.bands.length);
