@@ -3,7 +3,8 @@
 
 import { createGpuEngine } from './gpu/engine';
 import { createGlEngine } from './gl/engine';
-import { features, tickFeatures } from './features';
+import { features, hitLog, pictureDelay, tickFeatures } from './features';
+import { Moods } from './moods';
 import { pickPlacement, setStageStatus, type Anchor } from './stage';
 import { sampleImage, SHAPE_SOURCES } from './targets';
 import type { Engine, FrameInput, Shape, TargetSet } from './types';
@@ -49,6 +50,7 @@ export class VisualController {
   private idleSeed = 0;
   private sinceIdleKick = 0;
   private lastKickCount = 0;
+  private moods = new Moods();
   private pointerX = -1e5;
   private pointerY = -1e5;
   private pointerSeen = 0;
@@ -59,7 +61,11 @@ export class VisualController {
 
   async start(): Promise<boolean> {
     // `?engine=gl` forces the fallback, for testing it on a WebGPU machine.
-    const forceGl = new URLSearchParams(window.location.search).get('engine') === 'gl';
+    const params = new URLSearchParams(window.location.search);
+    const forceGl = params.get('engine') === 'gl';
+    // `?mood=loose` (or steady) keeps a picture in one mood, to look at it.
+    const mood = params.get('mood');
+    if (process.env.NODE_ENV !== 'production' && (mood === 'steady' || mood === 'loose')) this.moods.pin = mood;
     if (!forceGl) {
       try {
         this.engine = await createGpuEngine(this.canvas);
@@ -146,7 +152,7 @@ export class VisualController {
     }
     this.engine.resize(W, H);
 
-    tickFeatures(dt);
+    tickFeatures(dt, now);
     this.adapt(dt);
 
     // ---- where ----
@@ -199,10 +205,23 @@ export class VisualController {
     // ---- music, or a little life of its own ----
     let kick = features.kick;
     let seed = features.kickSeed;
+    let landed = 0;
     if (features.kickCount !== this.lastKickCount) {
       this.lastKickCount = features.kickCount;
       this.sinceIdleKick = 0;
+      landed = features.kick;
     }
+
+    // A picture with the screen to itself has moods. What drives them is how
+    // much is going on: loudness, plus every snare and hat, so it isn't only
+    // the kick that moves it.
+    const busy = Math.max(0, (features.level - 0.2) / 0.5) + 0.3 * features.snare + 0.15 * features.hat;
+    this.moods.step({
+      dt,
+      on: features.active && this.formedFor > 1 && Boolean(this.anchor?.free),
+      energy: Math.min(1, busy) * features.presence,
+      kick: landed,
+    });
     if (!features.active) {
       // nothing playing: a formed logo twitches now and then so you can
       // tell it's made of something
@@ -255,6 +274,8 @@ export class VisualController {
       snare: features.snare * this.twistSign,
       hat: features.hat,
       presence: features.presence,
+      stir: this.moods.stir,
+      grip: this.moods.grip,
       glow: 0.3 + features.level * 1.1 + kick * 0.5,
       dim: this.fade,
       pointerX: px,
@@ -266,10 +287,12 @@ export class VisualController {
     if (process.env.NODE_ENV !== 'production') {
       this.avgDt += (dt - this.avgDt) * 0.05;
       (window as unknown as Record<string, unknown>).__features = features;
+      (window as unknown as Record<string, unknown>).__sync = { pictureDelay: pictureDelay(), hits: hitLog };
       (window as unknown as Record<string, unknown>).__ink = {
         fps: Math.round(1 / this.avgDt),
         particles: this.engine.particleCount,
         form: +this.form.toFixed(2),
+        mood: this.moods.mood,
         emergence: +this.emergence.toFixed(2),
         canvas: [W, H],
       };

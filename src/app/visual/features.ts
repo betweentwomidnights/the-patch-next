@@ -7,9 +7,13 @@
 // the FFT, and that's all here:
 //   - sixteen log-spaced bands, each measured against its own recent range,
 //     so a quiet hi-hat moves its band as much as a loud bass moves its own
-//   - three separate onset detectors (kick, snare, hat) on an unsmoothed
-//     analyser, each judged against its own recent history
 //   - brightness (where the weight of the spectrum sits)
+//
+// Drum hits come from somewhere else: public/worklets/hits.js finds them on
+// the audio thread and says exactly when each one will be heard. This file
+// holds each hit until the frame that will be on screen at that moment.
+// (Browsers that can't run the worklet fall back to the onset detectors
+// below, which look at the analyser once a frame and are far less exact.)
 
 export const BAND_COUNT = 16;
 
@@ -55,6 +59,56 @@ export const features: AudioFeatures = {
 
 const LOW_HZ = 40;
 const HIGH_HZ = 14000;
+
+// ---- timing: when does what we draw now reach the eye? ----
+
+/** Typical time between frames, in ms. */
+let frameMs = 1000 / 60;
+/** Set with ?sync=<ms> to nudge the picture later (positive) or earlier. */
+let trim: number | null = null;
+
+function readTrim(): number {
+  if (trim !== null) return trim;
+  trim = 0;
+  try {
+    const asked = new URLSearchParams(window.location.search).get('sync');
+    if (asked !== null && Number.isFinite(Number(asked))) window.localStorage.setItem('patch-sync', String(Number(asked)));
+    trim = Math.min(300, Math.max(-300, Number(window.localStorage.getItem('patch-sync')) || 0));
+  } catch {
+    // no storage: no trim
+  }
+  return trim;
+}
+
+/**
+ * Milliseconds from the start of a frame to its light leaving the screen.
+ * The frame has to be drawn (one frame's time), then waits for the next
+ * screen refresh in the system's compositor, then the panel itself takes a
+ * few milliseconds. Nothing in the page can measure this, so it's that
+ * usual sum, adjusted by the listener's trim (a positive trim says the
+ * screen is quicker than we think, which moves the picture later).
+ */
+export function pictureDelay(): number {
+  return frameMs + Math.min(frameMs, 17) + 6 - readTrim();
+}
+
+/** Says when a moment on the audio clock will be heard, on the page's clock (ms). */
+export interface HitClock {
+  heardAt(contextTime: number): number;
+}
+
+type HitKind = 'kick' | 'snare' | 'hat';
+interface PendingHit {
+  kind: HitKind;
+  /** performance.now() time at which it will be heard. */
+  at: number;
+  strength: number;
+  /** When we learned of it. */
+  known: number;
+}
+
+/** In development, how the last hits were timed (see window.__sync). */
+export const hitLog: { kind: HitKind; notice: number; error: number }[] = [];
 
 /** Finds sudden rises in one slice of the spectrum (spectral flux). */
 class Onset {
@@ -103,6 +157,8 @@ export class FeatureExtractor {
   private bandMean = new Float32Array(BAND_COUNT);
   private bandDev = new Float32Array(BAND_COUNT).fill(0.05);
   private silentFor = 0;
+  private pending: PendingHit[] = [];
+  private timed = false;
   private kickOnset = new Onset(35, 140, 0.22, 0.3);
   private snareOnset = new Onset(180, 3200, 0.14, 0.18);
   private hatOnset = new Onset(6000, 14000, 0.07, 0.06);
@@ -118,6 +174,43 @@ export class FeatureExtractor {
     for (let i = 0; i <= BAND_COUNT; i++) this.edges.push(LOW_HZ * Math.pow(HIGH_HZ / LOW_HZ, i / BAND_COUNT));
   }
 
+  /**
+   * Take hits from the audio-thread detector instead of finding them here.
+   * Each message is a list of [kind, audio-clock time it began, strength].
+   */
+  listen(port: MessagePort, clock: HitClock): void {
+    this.timed = true;
+    port.onmessage = (e: MessageEvent<[HitKind, number, number][]>) => {
+      const known = performance.now();
+      for (const [kind, time, strength] of e.data) this.pending.push({ kind, at: clock.heardAt(time), strength, known });
+      // (nothing draws in a hidden tab, so nothing would ever clear these out)
+      if (this.pending.length > 200) this.pending.splice(0, this.pending.length - 200);
+    };
+  }
+
+  /** The hits that belong to the frame being drawn: strongest of each kind, 0 if none. */
+  private due(frameTime: number): Record<HitKind, number> {
+    const now = { kick: 0, snare: 0, hat: 0 };
+    if (this.pending.length === 0) return now;
+    // This frame is what the listener will be looking at around `shown`.
+    // A hit goes to whichever frame is nearest its moment.
+    const shown = frameTime + pictureDelay();
+    this.pending = this.pending.filter((hit) => {
+      const error = shown - hit.at;
+      if (error < -frameMs / 2) return true; // not yet
+      // (after a stall, hits that are long gone are dropped, not played in a burst)
+      if (error < 150) {
+        now[hit.kind] = Math.max(now[hit.kind], hit.strength);
+        if (process.env.NODE_ENV !== 'production') {
+          hitLog.push({ kind: hit.kind, notice: Math.round(hit.at - hit.known), error: Math.round(error) });
+          if (hitLog.length > 400) hitLog.shift();
+        }
+      }
+      return false;
+    });
+    return now;
+  }
+
   private mean(lo: number, hi: number): number {
     const a = Math.max(1, Math.floor(lo / this.hzPerBin));
     const b = Math.min(this.bins.length - 1, Math.max(a, Math.ceil(hi / this.hzPerBin) - 1));
@@ -126,9 +219,9 @@ export class FeatureExtractor {
     return sum / ((b - a + 1) * 255);
   }
 
-  update(dt: number): void {
+  /** `frameTime` is the frame's own timestamp (what requestAnimationFrame passes). */
+  update(dt: number, frameTime: number): void {
     this.analyser.getByteFrequencyData(this.bins);
-    this.fast.getByteFrequencyData(this.fastBins);
 
     // ---- bands ----
     // Each band is read two ways and blended: how it's moving against its own
@@ -170,17 +263,21 @@ export class FeatureExtractor {
     features.presence += ((features.active ? 1 : 0) - features.presence) * (1 - Math.exp(-dt * 3));
 
     // ---- hits ----
-    const kick = this.kickOnset.step(this.fastBins, this.fastHz, dt);
+    let kick: number, snare: number, hat: number;
+    if (this.timed) ({ kick, snare, hat } = this.due(frameTime));
+    else {
+      this.fast.getByteFrequencyData(this.fastBins);
+      kick = this.kickOnset.step(this.fastBins, this.fastHz, dt);
+      snare = this.snareOnset.step(this.fastBins, this.fastHz, dt);
+      hat = this.hatOnset.step(this.fastBins, this.fastHz, dt);
+    }
+
     if (kick > 0) {
       features.kick = kick;
       features.kickSeed = Math.random();
       features.kickCount++;
     } else features.kick *= Math.exp(-dt * 9);
-
-    const snare = this.snareOnset.step(this.fastBins, this.fastHz, dt);
     features.snare = snare > 0 ? Math.max(features.snare, snare) : features.snare * Math.exp(-dt * 10);
-
-    const hat = this.hatOnset.step(this.fastBins, this.fastHz, dt);
     features.hat = hat > 0 ? Math.max(features.hat, hat) : features.hat * Math.exp(-dt * 16);
   }
 }
@@ -198,9 +295,10 @@ export function setListening(on: boolean): void {
   listening = on;
 }
 
-/** Called once per frame by the visual layer. */
-export function tickFeatures(dt: number): void {
-  if (extractor && listening) extractor.update(dt);
+/** Called once per frame by the visual layer, with the frame's timestamp. */
+export function tickFeatures(dt: number, frameTime: number): void {
+  frameMs += (Math.min(50, Math.max(4, dt * 1000)) - frameMs) * 0.05;
+  if (extractor && listening) extractor.update(dt, frameTime);
   else relaxFeatures(dt);
 }
 

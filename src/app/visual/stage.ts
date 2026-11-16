@@ -15,6 +15,8 @@ export interface Anchor {
   priority: number;
   /** How much of the element's smaller side the object's stage fills. */
   fill: number;
+  /** The ink has the screen to itself here, so a picture may go through its moods. */
+  free: boolean;
 }
 
 const anchors = new Set<Anchor>();

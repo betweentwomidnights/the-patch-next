@@ -38,6 +38,10 @@ export interface FrameInput {
   hat: number;
   /** 0 in silence, 1 with music: scales everything the bands do. */
   presence: number;
+  /** A formed picture's mood (see moods.ts): how hard eddies push its particles around, */
+  stir: number;
+  /** and how firmly it holds them (1 as normal, less is looser). */
+  grip: number;
   glow: number;
   /** Overall opacity, 0..1. */
   dim: number;
