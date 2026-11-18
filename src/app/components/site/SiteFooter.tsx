@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import SocialMediaButtonGroup from '../SocialButtons';
 import { SupportLinks } from '../SponsorButton';
 import SectionRule from './SectionRule';
@@ -14,6 +15,14 @@ export default function SiteFooter() {
           <a href="mailto:kev@thecollabagepatch.com" className="underline underline-offset-2 hover:text-paper">
             kev@thecollabagepatch.com
           </a>
+          <div className="mt-1 flex justify-center gap-3">
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-paper">
+              privacy
+            </Link>
+            <Link href="/terms" className="underline underline-offset-2 hover:text-paper">
+              terms
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
