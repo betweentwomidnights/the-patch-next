@@ -5,9 +5,20 @@ reads our etsy shop ([etsy.com/shop/thecollabagepatch](https://www.etsy.com/shop
 through etsy's api. etsy is the source of truth, and checkout, shipping and
 sales tax all happen there.
 
+## the short version
+
+- **publishing on etsy is the whole job.** a new listing shows up on the site by
+  itself within about 10 minutes. no pull request, no deploy.
+- **write the listing so the site can read it** (see below): start the title
+  with a short name followed by ` - `, and make the description's first paragraph
+  a one-line blurb. then the site copy is right with no extra steps.
+- **pull requests are the exception.** they're only for things etsy can't hold:
+  a big tile, a custom order, hiding something from the site, or site copy that
+  has to differ from the listing.
+
 ## what happens automatically
 
-the site refreshes from etsy every 10 minutes. no code change, no deploy.
+the site refreshes from etsy every 10 minutes.
 
 | do this on etsy | the site does this |
 | --- | --- |
@@ -17,62 +28,70 @@ the site refreshes from etsy every 10 minutes. no code change, no deploy.
 | feature it in the shop | it moves to the front (featured order wins) |
 | put it in a shop section | the section name shows on the card, and items group by section order |
 
-what the card shows:
+## writing a listing the site can read
 
-- **name**: the etsy title up to the first ` - `, lowercased. etsy titles are
-  written for etsy search, so "Custom 3D Printed Drink Coasters - Multi-Color
-  Logos and Designs - …" becomes "custom 3d printed drink coasters". usually you'll
-  want a proper site name in the overrides instead (see below).
-- **photos**: all of them, in etsy's order. the first is the big one. square photos
-  look best. etsy's photo alt text is used if you fill it in.
-- **price**: etsy's price, as "from $8" when the listing has variations (the
-  lowest variation price).
-- **blurb**: the first paragraph of the description, lowercased and cut around
-  200 characters. again, the overrides are where the real site copy goes.
-- "only N left" when 3 or fewer are in stock.
+the site builds each card from two parts of the etsy listing:
 
-with a single item in the shop, it gets the big layout on its own.
+- **name** = the title up to the first ` - ` (space, dash, space; ` | ` and long
+  dashes work too).
+- **blurb** = the description's first paragraph, up to the first blank line
+  (cut around 200 characters).
 
-## site copy
+both are shown lowercase on the site. etsy keeps exactly what you typed.
 
-the etsy listing is written for etsy: keyword-heavy titles and descriptions help
-people find it there, so keep doing that on etsy. the site speaks in the
-patch's own voice, so every item should get a site `name` and `blurb` in the
-overrides file below. the rules:
+that means one listing can serve both places. etsy wants keyword-heavy titles and
+descriptions so people find it in search, and the site wants a short name and one
+line in the patch's voice. put the site's part first and etsy's part after it:
 
-- **lowercase.** names, blurbs, everything. keep capitals only where a name
-  really has them (LoRA, YuE2, ACE-Step). overrides are shown exactly as written;
-  text pulled from etsy is lowercased automatically.
+```
+title:
+Coasters - Custom 3D Printed Drink Coasters - Multi-Color Logos and Designs - 90mm Bar and Desk Coaster
+
+description:
+support open source music software, get a dope throne for your coffee.
+
+Upgrade your desk, studio, or home bar with our custom multi-color 3D printed
+drink coasters! ...the rest of the etsy copy...
+```
+
+on the site that card reads **coasters**, with "support open source music
+software, get a dope throne for your coffee." everything after the first ` - `
+and after the first blank line is still there for etsy search.
+
+if a title has no ` - `, the whole title becomes the name. if the description
+has no blank line, its opening becomes the blurb. that works, but it usually
+reads like an ad on the site.
+
+### the copy rules
+
+these are for the name and the first-paragraph blurb (and for overrides):
+
+- **lowercase.** the site lowercases text from etsy anyway, so write it the way
+  it'll look. keep capitals only where a name really has them (LoRA, YuE2,
+  ACE-Step). those only survive in overrides, which are shown exactly as written.
 - **name**: what the thing is, as short as it can be. one or two words beats a
   sentence. "coasters", not "custom 3d printed drink coasters".
 - **blurb**: one line, said the way you'd say it out loud. why it exists beats
   what it's made of.
-- **no sales talk.** no "upgrade your desk", no exclamation marks, no keyword
-  lists. that's etsy's job.
+- **no sales talk** in the name or blurb. no "upgrade your desk", no exclamation
+  marks, no keyword lists. that belongs in the rest of the etsy listing.
 
-the coasters are the example to match:
+## what else the card shows
 
-| | etsy | site |
-| --- | --- | --- |
-| name | Custom 3D Printed Drink Coasters - Multi-Color Logos and Designs - … | coasters |
-| blurb | Upgrade your desk, studio, or home bar with our custom multi-color 3D printed drink coasters! | support open source music software, get a dope throne for your coffee. |
+- **photos**: all of them, in etsy's order. the first is the big one. square photos
+  look best. etsy's photo alt text is used if you fill it in.
+- **price**: etsy's price, as "from $8" when the listing has variations (the
+  lowest variation price).
+- **section**: the etsy shop section's name, as a small label.
+- "only N left" when 3 or fewer are in stock.
 
-## site-only tweaks: `src/app/lib/merch-overrides.json`
+with a single item in the shop, it gets the big layout on its own.
 
-for things etsy has no field for. keys are etsy listing ids (the number in the
-listing url, `etsy.com/listing/<id>/...`). every field is optional, and an empty
-file (`{}`) means everything is automatic.
+## when a pull request is needed: `src/app/lib/merch-overrides.json`
 
-```json
-{
-  "4619641566": {
-    "name": "coasters",
-    "blurb": "support open source music software, get a dope throne for your coffee."
-  }
-}
-```
-
-every field, for reference:
+this file is for things etsy has no field for. keys are etsy listing ids (the
+number in the listing url, `etsy.com/listing/<id>/...`). every field is
+optional, and an empty file (`{}`) means everything comes from etsy.
 
 ```json
 {
@@ -86,18 +105,22 @@ every field, for reference:
 }
 ```
 
-- `name`, `blurb`: replace the automatic ones on the site only. etsy is unchanged.
+- `name`, `blurb`: site-only text. an override **wins** over the etsy listing,
+  so once one is set, editing the etsy title or description no longer changes
+  the site. use these when the site copy has to differ from the listing, or needs
+  capitals the lowercasing would remove. otherwise, write it on etsy instead.
 - `size`: `"large"` makes a big tile that spans the grid.
 - `order`: lower comes first. items without one follow in etsy's order.
 - `hide`: `true` keeps a listing off the site while it stays on etsy.
 
-changing this file needs a pull request, since merging to `main` deploys the
-site. an agent can open the PR (edit the file, nothing else); kev reviews and
-merges it. ids that no longer exist are ignored, so stale entries are harmless.
+the coasters (`4619641566`) currently have a `name` and `blurb` override, because
+the listing went up before this convention. once the etsy listing is rewritten
+the way shown above, that override can be deleted in a PR. the site will look the
+same, and from then on the etsy listing is the only place to edit.
 
-when a new listing goes up on etsy, the PR to open is: add its listing id with a
-`name` and `blurb` that follow the copy rules above. until it merges, the site
-shows the item with its etsy text, lowercased.
+how the PR works: merging to `main` deploys the site, so an agent can open the PR
+(edit this file, nothing else) and kev reviews and merges it. ids that no longer
+exist are ignored, so stale entries are harmless.
 
 ## setup notes
 
