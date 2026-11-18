@@ -38,6 +38,12 @@ export default function TermsPage() {
           licenses. check a model&apos;s license before you use what it makes commercially.
         </li>
         <li>
+          and in general, never treat a single ai output as a finished product. we believe the human work you put in
+          (editing, arranging, playing over it with your own hands) is what makes it yours, and copyright law so far
+          points the same way: in the US, for example, purely ai-generated material isn&apos;t protected, while your own
+          creative changes and arrangement can be. (that&apos;s our understanding, not legal advice.)
+        </li>
+        <li>
           everything is provided as-is, without warranty. we work hard on it, but we can&apos;t promise it&apos;ll be
           bug-free or fit your particular use, and we aren&apos;t liable for problems that come from using it.
         </li>
@@ -51,7 +57,7 @@ export default function TermsPage() {
         <a href="https://stripe.com/legal" {...ext} className="link">
           stripe&apos;s terms
         </a>{' '}
-        apply to the purchase. if something went wrong with a payment, email us and we&apos;ll sort it out.
+        apply to the purchase. if something went wrong with a payment, email us and we&apos;ll figure it out together.
       </p>
 
       <H>merch</H>

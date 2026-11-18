@@ -23,7 +23,8 @@ export default function PrivacyPage() {
 
       <p className="mt-6">
         this is the privacy policy for thecollabagepatch.com, run by the collabage patch, inc. the short version: we
-        don&apos;t want your data. there are no accounts, no cookies, and no analytics or ad trackers on this site.
+        don&apos;t want your data, and collecting it would be too much work anyway. there are no accounts, no cookies,
+        and no analytics or ad trackers on this site.
       </p>
 
       <H>what this site keeps</H>
