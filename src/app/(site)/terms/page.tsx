@@ -38,16 +38,14 @@ export default function TermsPage() {
           licenses. check a model&apos;s license before you use what it makes commercially.
         </li>
         <li>
-          and in general, never treat a single ai output as a finished product. we believe the human work you put in
-          (editing, arranging, playing over it with your own hands) is what makes it yours, and copyright law so far
-          points the same way: in the US, for example, purely ai-generated material isn&apos;t protected, while your own
-          creative changes and arrangement can be. (that&apos;s our understanding, not legal advice.)
+          in general, never treat a single ai output as a finished product. we believe the human work you put in
+          (editing, arranging, your input audio) is what makes it yours, and copyright law so far seems to point the same way.
         </li>
         <li>
           everything is provided as-is, without warranty. we work hard on it, but we can&apos;t promise it&apos;ll be
           bug-free or fit your particular use, and we aren&apos;t liable for problems that come from using it.
         </li>
-        <li>gary&apos;s remote backend is best effort. sometimes it&apos;s down or busy.</li>
+        <li>gary&apos;s remote backend is best effort. sometimes it&apos;s down or busy, and we don&apos;t store your input audio or outputs.</li>
       </ul>
 
       <H>paying what you want</H>

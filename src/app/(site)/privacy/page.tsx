@@ -22,12 +22,12 @@ export default function PrivacyPage() {
       <p className="label mt-3">last updated {UPDATED}</p>
 
       <p className="mt-6">
-        this is the privacy policy for thecollabagepatch.com, run by the collabage patch, inc. the short version: we
-        don&apos;t want your data, and collecting it would be too much work anyway. there are no accounts, no cookies,
-        and no analytics or ad trackers on this site.
+        this is the privacy policy for thecollabagepatch.com, run by the collabage patch, inc. we
+        don&apos;t want your data; that would be too much work. there are no accounts, no cookies,
+        and no analytics or ad trackers on this site right now.
       </p>
 
-      <H>what this site keeps</H>
+      <H>what this site does store</H>
       <ul className="mt-4 list-disc space-y-2 pl-5">
         <li>
           <strong>server logs.</strong> like any web server, ours logs requests: your IP address, browser, the page you
