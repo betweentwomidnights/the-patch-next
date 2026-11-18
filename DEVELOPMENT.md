@@ -70,6 +70,11 @@ Without a key the site still runs; the pay button just shows as unavailable. Sof
 download links live in `src/app/lib/catalog.ts`; prices live in Stripe, found by lookup key
 (e.g. `gary4juce_pwyw`). The VM's `.env.local` holds the live key.
 
+**Merch (Etsy):** `/merch` reads our Etsy shop with a read-only seller-app key in
+`.env.local` as `ETSY_API_KEY=keystring:shared_secret` (the VM has its own copy). Listings
+update on their own from Etsy; site-only tweaks go in `src/app/lib/merch-overrides.json`.
+See [docs/MERCH.md](docs/MERCH.md).
+
 **Rolling back:** revert the commit and push, or open an older successful run in
 **Actions** and re-run it. Any commit on `main` can be redeployed.
 

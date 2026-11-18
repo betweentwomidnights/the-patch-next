@@ -1,8 +1,6 @@
 const express = require('express');
 const next = require('next');
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 const { Server } = require('socket.io');
 const http = require('http');
 const audioStateManager = require('./AudioStateManager');
@@ -12,28 +10,6 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
-
-// Path to waitlist file
-const WAITLIST_FILE = path.join(__dirname, 'data', 'android-waitlist.json');
-
-// Initialize waitlist file
-async function initWaitlist() {
-    const dir = path.dirname(WAITLIST_FILE);
-    try {
-        await fs.promises.access(dir);
-    } catch {
-        await fs.promises.mkdir(dir, { recursive: true });
-        console.log('Created data directory:', dir);
-    }
-
-    try {
-        await fs.promises.access(WAITLIST_FILE);
-    } catch {
-        const initialData = { users: [] };
-        await fs.promises.writeFile(WAITLIST_FILE, JSON.stringify(initialData, null, 2));
-        console.log('Created waitlist file:', WAITLIST_FILE);
-    }
-}
 
 // Discover every collection, then start the shared weighted rotation.
 async function initializeAudioState() {
@@ -57,7 +33,6 @@ async function initializeAudioState() {
 
 app.prepare().then(async () => {
     try {
-        await initWaitlist();
         await initializeAudioState();
     } catch (error) {
         console.error('Error during initialization:', error);
@@ -147,42 +122,6 @@ app.prepare().then(async () => {
         }
     });
     
-    // Waitlist endpoint
-    server.post('/api/waitlist', async (req, res) => {
-        try {
-            const { email, firstName } = req.body;
-
-            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                return res.status(400).json({ message: 'Invalid email address' });
-            }
-
-            if (!firstName || firstName.trim().length === 0) {
-                return res.status(400).json({ message: 'First name is required' });
-            }
-
-            await initWaitlist();
-
-            const data = JSON.parse(await fs.promises.readFile(WAITLIST_FILE, 'utf8'));
-
-            if (data.users.some(user => user.email === email)) {
-                return res.status(409).json({ message: 'Email already registered' });
-            }
-
-            data.users.push({
-                email,
-                firstName,
-                signupDate: new Date().toISOString()
-            });
-
-            await fs.promises.writeFile(WAITLIST_FILE, JSON.stringify(data, null, 2));
-
-            res.status(200).json({ message: 'Successfully added to waitlist' });
-        } catch (error) {
-            console.error('Waitlist error:', error);
-            res.status(500).json({ message: 'Internal server error' });
-        }
-    });
-
     // Track check interval for playlist management
     setInterval(async () => {
         try {
