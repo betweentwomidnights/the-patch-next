@@ -158,7 +158,9 @@ export async function getMerch(): Promise<MerchResult> {
 
     const items = visible.map((l): MerchItem => {
       const o = siteOverrides[l.listing_id] ?? {};
-      const name = o.name ?? shortTitle(l.title);
+      // The site's voice is lowercase. Text taken from Etsy is lowercased;
+      // overrides are used exactly as written (so "LoRA" can stay "LoRA").
+      const name = o.name ?? shortTitle(l.title).toLowerCase();
       const images = [...(imagesById.get(l.listing_id) ?? [])]
         .sort((a, b) => a.rank - b.rank)
         .map((im, i) => ({
@@ -171,7 +173,7 @@ export async function getMerch(): Promise<MerchResult> {
       return {
         id: l.listing_id,
         name,
-        blurb: o.blurb ?? firstParagraph(l.description),
+        blurb: o.blurb ?? firstParagraph(l.description).toLowerCase(),
         url: l.url,
         price: formatPrice(l.price),
         priceFrom: l.has_variations,
