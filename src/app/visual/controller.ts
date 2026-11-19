@@ -14,6 +14,23 @@ type ImageShape = Exclude<Shape, 'ball'>;
 /** Pixels the fluid passes may shade per frame; the canvas is scaled to fit. */
 const PIXEL_BUDGET = 2_300_000;
 
+/**
+ * The quality ladder, best first. On phones the cost is mostly pixels (every
+ * frame shades the whole canvas, several times over on WebGPU), so the first
+ * rungs draw at a lower resolution, which only makes soft ink a little softer.
+ * Then fewer particles, then half the frame rate. Below the last rung the ink
+ * switches off and the pages show their plain images: a struggling phone also
+ * starves the radio's audio, and the music matters more than the picture.
+ */
+const LEVELS = [
+  { scale: 1, particles: 1, fps: 60 },
+  { scale: 0.8, particles: 1, fps: 60 },
+  { scale: 0.65, particles: 0.8, fps: 60 },
+  { scale: 0.5, particles: 0.6, fps: 60 },
+  { scale: 0.5, particles: 0.45, fps: 30 },
+  { scale: 0.4, particles: 0.35, fps: 30 },
+] as const;
+
 export class VisualController {
   private canvas: HTMLCanvasElement;
   private engine: Engine | null = null;
@@ -44,8 +61,16 @@ export class VisualController {
   private twistSign = 1;
   private lastSnare = 0;
   private slowDt = 1 / 60;
-  private sinceAdapt = 0;
-  private quality = 1;
+  // quality ladder (see LEVELS)
+  private level = 0;
+  /** The best rung this device may climb back to; raised whenever a rung proves too slow. */
+  private bestAllowed = 0;
+  private slowFor = 0;
+  private fastFor = 0;
+  private forcedLevel = false;
+  private debugEl: HTMLDivElement | null = null;
+  private slowMs = 0;
+  private sinceDebug = 0;
   private idleKick = 0;
   private idleSeed = 0;
   private sinceIdleKick = 0;
@@ -77,6 +102,10 @@ export class VisualController {
     if (!this.engine) this.engine = createGlEngine(this.canvas);
     if (!this.engine) return false;
 
+    if (process.env.NODE_ENV !== 'production') this.slowMs = Number(params.get('inkslow')) || 0;
+    this.pickStartLevel(params);
+    if (params.has('inkdebug')) this.showDebug();
+
     setStageStatus({ engine: this.engine.kind });
     window.addEventListener('pointermove', this.onPointer, { passive: true });
     document.addEventListener('visibilitychange', this.onVisibility);
@@ -93,7 +122,58 @@ export class VisualController {
     document.removeEventListener('visibilitychange', this.onVisibility);
     this.engine?.dispose();
     this.engine = null;
+    this.debugEl?.remove();
+    this.debugEl = null;
     setStageStatus({ engine: 'none', formedAt: null });
+  }
+
+  /**
+   * Where on the ladder to begin. Phones start a few rungs down (a fast one
+   * climbs back up within seconds); phones that only have the older WebGL
+   * path, or report little memory, start lower still. `?inkq=N` pins a rung,
+   * for testing on a real device.
+   */
+  private pickStartLevel(params: URLSearchParams): void {
+    const last = LEVELS.length - 1;
+    const forced = Number(params.get('inkq'));
+    if (params.has('inkq') && Number.isInteger(forced) && forced >= 0 && forced <= last) {
+      this.forcedLevel = true;
+      this.setLevel(forced);
+      return;
+    }
+    const small = window.matchMedia('(pointer: coarse)').matches || Math.min(window.innerWidth, window.innerHeight) < 600;
+    let start = 0;
+    if (small) start = this.engine?.kind === 'webgl2' ? 3 : 2;
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+    if (memory !== undefined && memory <= 2) start = Math.max(start, 3);
+    this.setLevel(start);
+  }
+
+  private setLevel(level: number): void {
+    this.level = level;
+    this.slowDt = 1 / LEVELS[level].fps;
+    this.slowFor = 0;
+    this.fastFor = 0;
+    this.engine?.setActive(this.engine.particleCount * LEVELS[level].particles);
+  }
+
+  /** Below the last rung: switch the ink off for this visit and let the pages show their images. */
+  private giveUp(): void {
+    console.info('[visual] too slow on this device; switching the ink off');
+    this.stop();
+    this.canvas.width = 1;
+    this.canvas.height = 1;
+  }
+
+  /** `?inkdebug`: a small readout of what the ink is doing, for testing on phones. */
+  private showDebug(): void {
+    const el = document.createElement('div');
+    el.setAttribute('aria-hidden', 'true');
+    el.style.cssText =
+      'position:fixed;right:8px;top:72px;z-index:9999;pointer-events:none;white-space:pre;' +
+      'font:11px/1.35 ui-monospace,monospace;color:#f90000;background:rgba(0,0,0,.8);padding:6px 8px;border:1px solid #f90000';
+    document.body.appendChild(el);
+    this.debugEl = el;
   }
 
   private onPointer = (e: PointerEvent) => {
@@ -104,7 +184,11 @@ export class VisualController {
   };
 
   private onVisibility = () => {
-    if (!document.hidden) this.last = performance.now();
+    if (document.hidden) return;
+    this.last = performance.now();
+    // time spent in the background says nothing about speed
+    this.slowFor = 0;
+    this.fastFor = 0;
   };
 
   private async ensureTargets(shape: ImageShape): Promise<void> {
@@ -119,22 +203,58 @@ export class VisualController {
     }
   }
 
-  /** If frames keep running long, give this machine less ink to push around. */
+  /**
+   * Walk the quality ladder. Frames running long for a couple of seconds:
+   * down a rung, and that rung's better neighbour is never tried again this
+   * visit. Comfortably fast for a while: back up a rung, if allowed.
+   */
   private adapt(dt: number): void {
-    if (!this.engine || document.hidden) return;
-    this.slowDt += (dt - this.slowDt) * 0.04;
-    this.sinceAdapt += dt;
-    if (this.sinceAdapt < 2.5) return;
-    this.sinceAdapt = 0;
-    if (this.slowDt > 1 / 45 && this.quality > 0.45) {
-      this.quality = Math.max(0.45, this.quality * 0.8);
-      this.engine.setActive(this.engine.particleCount * this.quality);
+    if (!this.engine || document.hidden || this.forcedLevel) return;
+    this.slowDt += (dt - this.slowDt) * 0.05;
+    const target = 1 / LEVELS[this.level].fps;
+    if (this.slowDt > target * 1.25) {
+      this.slowFor += dt;
+      this.fastFor = 0;
+    } else if (this.slowDt < target * 1.07) {
+      this.fastFor += dt;
+      this.slowFor = 0;
+    } else {
+      this.slowFor = 0;
+      this.fastFor = 0;
     }
+    if (this.slowFor > 2) {
+      this.bestAllowed = this.level + 1;
+      if (this.level + 1 >= LEVELS.length) {
+        this.giveUp();
+        return;
+      }
+      this.setLevel(this.level + 1);
+    } else if (this.fastFor > 8 && this.level > this.bestAllowed) {
+      this.setLevel(this.level - 1);
+    }
+  }
+
+  private updateDebug(dt: number, W: number, H: number): void {
+    if (!this.debugEl || !this.engine) return;
+    this.sinceDebug += dt;
+    if (this.sinceDebug < 0.5) return;
+    this.sinceDebug = 0;
+    const l = LEVELS[this.level];
+    this.debugEl.textContent = [
+      `ink ${this.engine.kind}${this.forcedLevel ? ' (pinned)' : ''}`,
+      `level ${this.level}/${LEVELS.length - 1}  best allowed ${this.bestAllowed}`,
+      `canvas ${W}x${H}  scale ${l.scale}  dpr ${window.devicePixelRatio || 1}`,
+      `particles ${Math.round(this.engine.particleCount * l.particles)}/${this.engine.particleCount}`,
+      `fps ${Math.round(1 / this.avgDt)} (target ${l.fps})`,
+    ].join('\n');
   }
 
   private loop = (now: number) => {
     if (!this.running || !this.engine) return;
     this.raf = requestAnimationFrame(this.loop);
+    // half-rate rungs simply skip every other display frame
+    const cap = LEVELS[this.level].fps;
+    if (cap < 60 && now - this.last < 1000 / cap - 4) return;
     const dt = Math.min(0.05, Math.max(0.001, (now - this.last) / 1000));
     this.last = now;
     this.time += dt;
@@ -143,7 +263,8 @@ export class VisualController {
     // ---- canvas size ----
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(PIXEL_BUDGET / Math.max(1, vw * vh)));
+    const dpr =
+      Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(PIXEL_BUDGET / Math.max(1, vw * vh))) * LEVELS[this.level].scale;
     const W = Math.max(2, Math.round(vw * dpr));
     const H = Math.max(2, Math.round(vh * dpr));
     if (this.canvas.width !== W || this.canvas.height !== H) {
@@ -153,7 +274,15 @@ export class VisualController {
     this.engine.resize(W, H);
 
     tickFeatures(dt, now);
+    // dev only: `?inkslow=N` stalls each frame N ms, to watch the ladder step down
+    if (process.env.NODE_ENV !== 'production' && this.slowMs > 0) {
+      const until = performance.now() + this.slowMs;
+      while (performance.now() < until);
+    }
+    this.avgDt += (dt - this.avgDt) * 0.05;
     this.adapt(dt);
+    if (!this.engine) return; // adapt may have switched the ink off
+    this.updateDebug(dt, W, H);
 
     // ---- where ----
     const placement = pickPlacement(vw, vh);
@@ -285,12 +414,12 @@ export class VisualController {
     this.engine.render(frame);
 
     if (process.env.NODE_ENV !== 'production') {
-      this.avgDt += (dt - this.avgDt) * 0.05;
       (window as unknown as Record<string, unknown>).__features = features;
       (window as unknown as Record<string, unknown>).__sync = { pictureDelay: pictureDelay(), hits: hitLog };
       (window as unknown as Record<string, unknown>).__ink = {
         fps: Math.round(1 / this.avgDt),
         particles: this.engine.particleCount,
+        level: this.level,
         form: +this.form.toFixed(2),
         mood: this.moods.mood,
         emergence: +this.emergence.toFixed(2),
