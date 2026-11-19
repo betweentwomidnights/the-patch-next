@@ -27,7 +27,7 @@ function Price({ item }: { item: MerchItem }) {
 function MerchCard({ item, first }: { item: MerchItem; first: boolean }) {
   return (
     <li className={cn(item.large && 'sm:col-span-2')}>
-      <article className={cn('card h-full', item.large && 'grid items-start gap-x-10 gap-y-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]')}>
+      <article className={cn('card h-full', item.large && 'grid items-start gap-x-10 gap-y-4 sm:gap-y-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]')}>
         <MerchGallery images={item.images} large={item.large} priority={first} />
         <div className={cn(!item.large && 'mt-5')}>
           {item.section && <p className="label mb-2 text-patch">{item.section}</p>}
@@ -36,12 +36,19 @@ function MerchCard({ item, first }: { item: MerchItem; first: boolean }) {
               {item.name}
             </a>
           </h2>
-          <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <Price item={item} />
-            {item.fewLeft && <span className="label text-patch">only {item.fewLeft} left</span>}
+          {/* phones: the buy button sits next to the price, above the blurb, so
+              it fits on the first screen and clear of the radio dock. */}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <Price item={item} />
+              {item.fewLeft && <span className="label text-patch">only {item.fewLeft} left</span>}
+            </div>
+            <a href={item.url} {...ext} className="btn md:hidden">
+              buy on etsy ↗
+            </a>
           </div>
           {item.blurb && <p className="mt-3 max-w-prose leading-relaxed text-paper/90">{item.blurb}</p>}
-          <div className="mt-6">
+          <div className="mt-6 hidden md:block">
             <a href={item.url} {...ext} className="btn">
               buy on etsy ↗
             </a>
@@ -68,7 +75,7 @@ export default async function MerchPage() {
       </p>
 
       {merch.items.length > 0 ? (
-        <ul className="mt-10 grid gap-6 sm:grid-cols-2">
+        <ul className="mt-6 grid gap-6 sm:mt-10 sm:grid-cols-2">
           {merch.items.map((item, i) => (
             <MerchCard key={item.id} item={item} first={i === 0} />
           ))}

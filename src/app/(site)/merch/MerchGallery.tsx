@@ -16,7 +16,9 @@ export default function MerchGallery({ images, large, priority }: { images: Merc
 
   return (
     <div>
-      <div className="screen">
+      {/* phones: cap the photo at about a third of the screen height, so the
+          photo, blurb and buy button fit on one screen. md+ is unchanged. */}
+      <div className="screen mx-auto max-w-[32svh] md:max-w-none">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           key={current.full}
@@ -29,7 +31,7 @@ export default function MerchGallery({ images, large, priority }: { images: Merc
         />
       </div>
       {images.length > 1 && (
-        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="photos">
+        <div className="mt-2 flex flex-wrap justify-center gap-2 sm:mt-3 md:justify-start" role="group" aria-label="photos">
           {images.map((im, i) => (
             <button
               key={im.full}
@@ -38,7 +40,7 @@ export default function MerchGallery({ images, large, priority }: { images: Merc
               aria-label={`show photo ${i + 1} of ${images.length}`}
               aria-pressed={i === index}
               className={cn(
-                'sketch h-14 w-14 overflow-hidden transition-opacity',
+                'sketch h-11 w-11 overflow-hidden transition-opacity sm:h-14 sm:w-14',
                 i === index ? 'sketch-red' : 'sketch-quiet opacity-60 hover:opacity-100',
               )}
             >
