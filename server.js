@@ -39,6 +39,16 @@ app.prepare().then(async () => {
     }
 
     const server = express();
+
+    // The site has no Server Actions, so any request carrying a Next-Action
+    // header is a scanner probing for RSC / Server Action bugs. Turn it away
+    // here, quietly, before Next parses it and logs "Failed to find Server
+    // Action". If a Server Action is ever added, delete this.
+    server.use((req, res, next) => {
+        if (req.headers['next-action'] !== undefined) return res.status(404).end();
+        next();
+    });
+
     const httpServer = http.createServer(server);
     const io = new Server(httpServer, {
         cors: {
