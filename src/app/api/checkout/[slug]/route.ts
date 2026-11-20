@@ -6,8 +6,8 @@ import { getStripe, lookupPrice, siteOrigin } from '../../../lib/stripe';
 // redirects the buyer to it. The slug is in the path because server.js parses
 // form bodies before Next sees the request, so this route never reads one.
 
-export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
-  const product = getProduct(params.slug);
+export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const product = getProduct((await params).slug);
   if (!product?.stripeLookupKey) return new NextResponse('not found', { status: 404 });
 
   const origin = siteOrigin(req);

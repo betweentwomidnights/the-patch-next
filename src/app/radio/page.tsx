@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 // /radio?view=gary used to be the "more about gary" view. That story lives on
 // /about now, and old links (the landing page handed them out) still land there.
-export default function RadioPage({ searchParams }: { searchParams: { view?: string } }) {
-  if (searchParams.view === 'gary') redirect('/about#gary');
+export default async function RadioPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  if ((await searchParams).view === 'gary') redirect('/about#gary');
   return <RadioRoom />;
 }

@@ -14,12 +14,12 @@ import SoftwareCopy from '../../../components/site/SoftwareCopy';
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  params: { slug: string };
-  searchParams: { checkout?: string };
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ checkout?: string }>;
 }
 
-export function generateMetadata({ params }: Props): Metadata {
-  const product = getProduct(params.slug);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const product = getProduct((await params).slug);
   if (!product || product.stores?.length) return {};
   return { title: `${product.name} · the patch`, description: product.tagline };
 }
@@ -37,8 +37,10 @@ const gary4juceDemos: Demo[] = [
   poster: `/gary4juce_demos/gary4juce_demo_${i + 1}_poster.jpg`,
 }));
 
-export default function ProductPage({ params, searchParams }: Props) {
-  const product = getProduct(params.slug);
+export default async function ProductPage({ params, searchParams }: Props) {
+  const { slug } = await params;
+  const { checkout } = await searchParams;
+  const product = getProduct(slug);
   if (!product) notFound();
   if (product.stores?.length) redirect(`/products#${product.slug}`);
   const isGary = product.slug === 'gary4juce';
@@ -81,7 +83,7 @@ export default function ProductPage({ params, searchParams }: Props) {
               put the pay button several screens down. Show it here instead. */}
           {product.stripeLookupKey && (
             <div className="mt-8 lg:hidden">
-              <PayWhatYouWant product={product} status={searchParams.checkout} />
+              <PayWhatYouWant product={product} status={checkout} />
             </div>
           )}
 
@@ -127,7 +129,7 @@ export default function ProductPage({ params, searchParams }: Props) {
         <aside className="min-w-0 space-y-8 lg:sticky lg:top-[calc(var(--header-h)+1rem)]">
           {product.stripeLookupKey && (
             <div className="hidden lg:block">
-              <PayWhatYouWant product={product} status={searchParams.checkout} />
+              <PayWhatYouWant product={product} status={checkout} />
             </div>
           )}
 
