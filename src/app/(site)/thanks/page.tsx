@@ -33,8 +33,8 @@ async function readSession(sessionId: string | undefined): Promise<Paid | null> 
   }
 }
 
-export default async function ThanksPage({ searchParams }: { searchParams: { session_id?: string } }) {
-  const paid = await readSession(searchParams.session_id);
+export default async function ThanksPage({ searchParams }: { searchParams: Promise<{ session_id?: string }> }) {
+  const paid = await readSession((await searchParams).session_id);
 
   if (!paid) {
     return (
