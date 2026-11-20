@@ -1,0 +1,97 @@
+{
+  "folder": "cc2",
+  "year": null,
+  "fallbackDescription": "from season 2 of the captains chair. watch the whole season get made on youtube.",
+  "tracks": [
+    {
+      "file": "cc_s2_ep_1_extending_for_no_reason_catch_peaks.mp3",
+      "sourceFile": "cc_s2_ep_1_extending_for_no_reason_catch_peaks.wav",
+      "displayName": "captains chair s2 ep. 1",
+      "description": "",
+      "youtubeLink": "https://youtube.com/playlist?list=PLTgvaF3a9YMhy7q0oTf8av27CIyxCqeWi&si=IHEFQuIJqsmiutBy",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s2"
+    },
+    {
+      "file": "captains_chair_s2_ep2_catchpeaks.mp3",
+      "sourceFile": "captains_chair_s2_ep2_catchpeaks.wav",
+      "displayName": "captains chair s2 ep. 2",
+      "description": "",
+      "youtubeLink": "https://youtube.com/playlist?list=PLTgvaF3a9YMhy7q0oTf8av27CIyxCqeWi&si=IHEFQuIJqsmiutBy",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s2"
+    },
+    {
+      "file": "captains_chair_s2_ep3_finally.mp3",
+      "sourceFile": "captains_chair_s2_ep3_finally.wav",
+      "displayName": "captains chair s2 ep. 3",
+      "description": "",
+      "youtubeLink": "https://youtube.com/playlist?list=PLTgvaF3a9YMhy7q0oTf8av27CIyxCqeWi&si=IHEFQuIJqsmiutBy",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s2"
+    },
+    {
+      "file": "cc_s2_ep4.mp3",
+      "sourceFile": "cc_s2_ep4.wav",
+      "displayName": "captains chair s2 ep. 4",
+      "description": "",
+      "youtubeLink": "https://youtube.com/playlist?list=PLTgvaF3a9YMhy7q0oTf8av27CIyxCqeWi&si=IHEFQuIJqsmiutBy",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s2"
+    },
+    {
+      "file": "captains_chair_s2_ep5.mp3",
+      "sourceFile": "captains_chair_s2_ep5.wav",
+      "displayName": "captains chair s2 ep. 5",
+      "description": "",
+      "youtubeLink": "https://youtube.com/playlist?list=PLTgvaF3a9YMhy7q0oTf8av27CIyxCqeWi&si=IHEFQuIJqsmiutBy",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s2"
+    },
+    {
+      "file": "the_real_episode_6.mp3",
+      "sourceFile": "the_real_episode_6.wav",
+      "displayName": "captains chair s2 ep. 6",
+      "description": "",
+      "youtubeLink": "https://youtube.com/playlist?list=PLTgvaF3a9YMhy7q0oTf8av27CIyxCqeWi&si=IHEFQuIJqsmiutBy",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s2"
+    },
+    {
+      "file": "captains_chair_s2_ep7_catch_peaks.mp3",
+      "sourceFile": "captains_chair_s2_ep7_catch_peaks.wav",
+      "displayName": "captains chair s2 ep. 7",
+      "description": "",
+      "youtubeLink": "https://youtube.com/playlist?list=PLTgvaF3a9YMhy7q0oTf8av27CIyxCqeWi&si=IHEFQuIJqsmiutBy",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s2"
+    },
+    {
+      "file": "captains_chair_s2_ep8.mp3",
+      "sourceFile": "captains_chair_s2_ep8.wav",
+      "displayName": "captains chair s2 ep. 8",
+      "description": "",
+      "youtubeLink": "https://youtube.com/playlist?list=PLTgvaF3a9YMhy7q0oTf8av27CIyxCqeWi&si=IHEFQuIJqsmiutBy",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s2"
+    },
+    {
+      "file": "captains_chair_9_fta.mp3",
+      "sourceFile": "captains_chair_9_fta.wav",
+      "displayName": "captains chair s2 ep. 9",
+      "description": "",
+      "youtubeLink": "https://youtube.com/playlist?list=PLTgvaF3a9YMhy7q0oTf8av27CIyxCqeWi&si=IHEFQuIJqsmiutBy",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s2"
+    },
+    {
+      "file": "captains_chair_s2_ep10_ALWAYS_SAVE_BRO.mp3",
+      "sourceFile": "captains_chair_s2_ep10_ALWAYS_SAVE_BRO.wav",
+      "displayName": "captains chair s2 ep. 10",
+      "description": "",
+      "youtubeLink": "https://youtube.com/playlist?list=PLTgvaF3a9YMhy7q0oTf8av27CIyxCqeWi&si=IHEFQuIJqsmiutBy",
+      "videoStatus": "unreviewed",
+      "rotationGroup": "captains-chair-s2"
+    }
+  ]
+}

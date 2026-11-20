@@ -3,10 +3,31 @@
   "defaultWeight": 1,
   "repeatGap": 12,
   "relatedTrackGap": 2,
+  "cooldowns": [
+    {
+      "after": "captains-chair-s2-full",
+      "wait": "captains-chair-s2",
+      "hours": 3
+    },
+    {
+      "after": "captains-chair-s2",
+      "wait": "captains-chair-s2-full",
+      "minutes": 20
+    }
+  ],
   "tracks": {
-    "CCFiles/the_clusterfuck.mp3": { "weight": 0.02 },
-    "PoloFiles/ip_1.mp3": { "weight": 0.005 },
-    "development/netrunner_4_mac_quayle.mp3": { "weight": 0.1 },
-    "development/netrunner2.mp3": { "weight": 0.1 }
+    "CCFiles/the_clusterfuck.mp3": {
+      "weight": 0.02,
+      "rotationGroup": "captains-chair-s2-full"
+    },
+    "PoloFiles/ip_1.mp3": {
+      "weight": 0.005
+    },
+    "development/netrunner_4_mac_quayle.mp3": {
+      "weight": 0.1
+    },
+    "development/netrunner2.mp3": {
+      "weight": 0.1
+    }
   }
 }

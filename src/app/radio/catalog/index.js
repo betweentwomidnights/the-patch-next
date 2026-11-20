@@ -2,4 +2,5 @@
 module.exports = [
     require('./2026.json'),
     require('./development.json'),
+    require('./cc2.json'),
 ];

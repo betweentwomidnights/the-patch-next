@@ -208,3 +208,106 @@ test('a failed audio load preserves the announced song for retry and never consu
     assert.equal(manager.currentState.file, announced.file);
     assert.equal(manager.rotation.history.length, 2);
 });
+
+// ---- cooldowns: an album and its single tracks keep apart ----
+
+const HOUR = 3600 * 1000;
+const cooldownConfig = {
+    timeZone: 'America/Phoenix',
+    defaultWeight: 1,
+    repeatGap: 0,
+    relatedTrackGap: 0,
+    tracks: {},
+    cooldowns: [
+        { after: 'album', wait: 'singles', hours: 3 },
+        { after: 'singles', wait: 'album', hours: 3 },
+    ],
+};
+const albumTracks = [
+    { key: 'old/album.mp3', folder: 'old', file: 'album.mp3', rotationGroup: 'album' },
+    { key: 'new/one.mp3', folder: 'new', file: 'one.mp3', rotationGroup: 'singles' },
+    { key: 'new/two.mp3', folder: 'new', file: 'two.mp3', rotationGroup: 'singles' },
+    { key: 'misc/other.mp3', folder: 'misc', file: 'other.mp3', rotationGroup: 'misc/other.mp3' },
+];
+const isSingle = track => track.rotationGroup === 'singles';
+
+test('after the album starts, no single track starts for the cooldown, then they can', () => {
+    let next = 0;
+    const draws = [0, 0.99, 0.5, 0.3, 0.7];
+    const rotation = new RadioRotation(albumTracks, { config: cooldownConfig, random: () => draws[next++ % draws.length] });
+    assert.equal(play(rotation, 0).key, 'old/album.mp3');
+    for (let at = 10 * 60 * 1000; at < 3 * HOUR; at += 10 * 60 * 1000) {
+        assert(!isSingle(play(rotation, at)), `a single played ${at / 60000} minutes after the album`);
+    }
+    const later = new RadioRotation(albumTracks, { config: cooldownConfig, random: () => 0.5 });
+    play(later, 0);
+    // weights 1 each over [album, one, two, other]: 0.5 lands on a single once they're allowed
+    assert(isSingle(play(later, 3 * HOUR + 1)));
+});
+
+test('after a single track starts, the album waits, but other singles do not', () => {
+    // random 0 takes the first track in the pool; the album is first whenever it's allowed
+    const rotation = new RadioRotation(albumTracks, { config: cooldownConfig, random: () => 0 });
+    rotation.groupStarts.set('singles', 0); // a single started at time 0
+    // an hour later the album is skipped, and another single is fine
+    assert.equal(play(rotation, HOUR).key, 'new/one.mp3');
+    // that single restarted the cooldown, so the album waits until 3 hours after it
+    assert.notEqual(rotation.prepare(4 * HOUR - 1).key, 'old/album.mp3');
+    rotation.pending = null;
+    assert.equal(rotation.prepare(4 * HOUR + 1).key, 'old/album.mp3');
+});
+
+test('a cooldown relaxes when nothing else could play', () => {
+    const only = albumTracks.slice(0, 3);
+    const rotation = new RadioRotation(only, { config: cooldownConfig, random: () => 0 });
+    rotation.groupStarts.set('singles', 0);
+    rotation.groupStarts.set('album', 0);
+    assert(rotation.prepare(HOUR));
+});
+
+test('bad cooldowns are rejected', () => {
+    const bad = cooldowns => () => new RadioRotation(albumTracks, { config: { ...cooldownConfig, cooldowns } });
+    assert.throws(bad([{ after: 'album', hours: 3 }]));
+    assert.throws(bad([{ after: 'album', wait: 'album', hours: 3 }]));
+    assert.throws(bad([{ after: 'album', wait: 'singles', hours: 0 }]));
+    assert.throws(bad([{ after: 'album', wait: 'singles' }]));
+    assert.throws(bad([{ after: 'album', wait: 'singles', hours: 1, minutes: 5 }]));
+    assert.throws(bad({}));
+});
+
+test('cooldowns are one-way, and each direction has its own length', () => {
+    const oneWay = { ...cooldownConfig, cooldowns: [
+        { after: 'album', wait: 'singles', hours: 3 },
+        { after: 'singles', wait: 'album', minutes: 20 },
+    ] };
+    const rotation = new RadioRotation(albumTracks, { config: oneWay });
+    const album = albumTracks[0];
+    const single = albumTracks[1];
+    rotation.groupStarts.set('singles', 0);
+    assert(rotation.coolingDown(album, 19 * 60 * 1000));
+    assert(!rotation.coolingDown(album, 21 * 60 * 1000));
+    rotation.groupStarts.clear();
+    rotation.groupStarts.set('album', 0);
+    assert(rotation.coolingDown(single, 2 * HOUR));
+    assert(!rotation.coolingDown(single, 3 * HOUR + 1));
+});
+
+test('the station keeps captains chair s2 and its single episodes apart', () => {
+    const rotation = new RadioRotation(tracks, { config });
+    const full = rotation.tracks.find(t => t.key === 'CCFiles/the_clusterfuck.mp3');
+    const episodes = rotation.tracks.filter(t => t.folder === 'cc2');
+    assert.equal(full.rotationGroup, 'captains-chair-s2-full');
+    assert.equal(full.weight, 0.02);
+    assert.equal(episodes.length, 10);
+    assert(episodes.every(t => t.rotationGroup === 'captains-chair-s2' && t.weight === 1));
+    // after the full season: episodes wait 3 hours
+    rotation.groupStarts.set('captains-chair-s2-full', 0);
+    assert(episodes.every(t => rotation.coolingDown(t, 2 * HOUR)));
+    assert(!episodes.some(t => rotation.coolingDown(t, 3 * HOUR + 1)));
+    // after an episode: the full season waits 20 minutes, other episodes don't
+    rotation.groupStarts.clear();
+    rotation.groupStarts.set('captains-chair-s2', 0);
+    assert(rotation.coolingDown(full, 19 * 60 * 1000));
+    assert(!rotation.coolingDown(full, 21 * 60 * 1000));
+    assert(!episodes.some(t => rotation.coolingDown(t, 60 * 1000)));
+});
