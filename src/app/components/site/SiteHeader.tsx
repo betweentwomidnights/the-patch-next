@@ -9,6 +9,7 @@ const nav = [
   { href: '/radio', label: 'radio' },
   { href: '/products', label: 'software' },
   { href: '/merch', label: 'merch' },
+  { href: '/news', label: 'news' },
   { href: '/about', label: 'about' },
 ];
 
@@ -29,7 +30,7 @@ export default function SiteHeader() {
           <span className="loud hidden text-3xl sm:inline">the patch</span>
         </Link>
 
-        <nav aria-label="site" className="flex items-center gap-3.5 font-display text-[1.35rem] leading-none sm:gap-6 sm:text-2xl">
+        <nav aria-label="site" className="flex items-center gap-2.5 font-display text-[1.25rem] leading-none min-[375px]:gap-3.5 min-[375px]:text-[1.35rem] sm:gap-6 sm:text-2xl">
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
