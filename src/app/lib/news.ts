@@ -5,9 +5,16 @@ export const NEWS_REPO = 'https://github.com/betweentwomidnights/patch-news';
 const DEFAULT_SOURCE = 'https://raw.githubusercontent.com/betweentwomidnights/patch-news/main';
 const REVALIDATE_SECONDS = 600;
 
+export interface NewsDiagram {
+  title: string;
+  steps: { label: string; detail: string; url: string }[];
+  caption: string;
+}
+
 interface NewsPost {
   date: string;
   title: string;
+  diagram?: NewsDiagram;
 }
 
 interface NewsDay {
@@ -53,6 +60,23 @@ function isCount(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
+function isText(value: unknown, limit: number): value is string {
+  return typeof value === 'string' && value.trim().length > 0 && value.length <= limit;
+}
+
+function parseDiagram(raw: unknown): NewsDiagram | undefined {
+  if (!isRecord(raw) || !isText(raw.title, 80) || !isText(raw.caption, 220) ||
+      !Array.isArray(raw.steps) || raw.steps.length < 2 || raw.steps.length > 5) return;
+
+  const steps: NewsDiagram['steps'] = [];
+  for (const step of raw.steps) {
+    if (!isRecord(step) || !isText(step.label, 60) || !isText(step.detail, 150) ||
+        !isText(step.url, 500) || !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+(?:\/[^\s]*)?$/.test(step.url)) return;
+    steps.push({ label: step.label, detail: step.detail, url: step.url });
+  }
+  return { title: raw.title, steps, caption: raw.caption };
+}
+
 function parseFeed(raw: unknown): NewsFeed {
   if (!isRecord(raw) || raw.version !== 1 || !isRecord(raw.days) || !Array.isArray(raw.posts)) {
     throw new Error('invalid patch news index');
@@ -74,11 +98,11 @@ function parseFeed(raw: unknown): NewsFeed {
   const postDates = new Set<string>();
   const posts = raw.posts.map((post: unknown) => {
     if (!isRecord(post) || !isNewsDate(post.date) || days[post.date]?.status !== 'posted' ||
-        postDates.has(post.date) || typeof post.title !== 'string' || !post.title.trim() || post.title.length > 100) {
+        postDates.has(post.date) || !isText(post.title, 100)) {
       throw new Error('invalid news post');
     }
     postDates.add(post.date);
-    return { date: post.date, title: post.title };
+    return { date: post.date, title: post.title, diagram: parseDiagram(post.diagram) };
   });
   if (Object.entries(days).some(([date, day]) => day.status === 'posted' && !postDates.has(date))) {
     throw new Error('missing news post');

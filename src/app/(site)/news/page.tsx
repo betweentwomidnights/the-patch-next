@@ -59,7 +59,10 @@ export default async function NewsPage() {
 
   return (
     <div className="pb-16">
-      <h1 className="loud text-5xl sm:text-6xl">news</h1>
+      <div className="flex items-end gap-3">
+        <h1 className="loud text-5xl sm:text-6xl">news</h1>
+        <span className="label mb-1 rounded-sm border border-patch/70 px-1.5 py-0.5 text-paper">beta</span>
+      </div>
       {quiet && (
         <div className="mt-8 max-w-prose">
           <time dateTime={checked} className="label">{newsDate(checked)}</time>
@@ -72,7 +75,7 @@ export default async function NewsPage() {
             <h2 className="loud mb-2 text-4xl sm:text-5xl">
               <Link href={`/news/${latest.date}`} className="hover:text-patch">{latest.title}</Link>
             </h2>
-            {markdown ? <NewsPost date={latest.date} markdown={markdown} /> : (
+            {markdown ? <NewsPost date={latest.date} markdown={markdown} diagram={latest.diagram} /> : (
               <p className="mt-4 text-ash">couldn’t load this update. <a className="link" href={`${NEWS_REPO}/blob/main/posts/${latest.date}.md`}>read it on github</a>.</p>
             )}
           </article>

@@ -27,7 +27,7 @@ export default async function DatedNewsPage({ params }: Props) {
       <Link href="/news" className="link">← news</Link>
       <article className="mt-6">
         <h1 className="loud mb-3 text-5xl sm:text-6xl">{post?.title ?? 'news'}</h1>
-        {markdown ? <NewsPost date={date} markdown={markdown} /> : (
+        {markdown ? <NewsPost date={date} markdown={markdown} diagram={post?.diagram} /> : (
           <p className="mt-4 text-ash">couldn’t load this update. <a href={`${NEWS_REPO}/tree/main/posts`} className="link">see the updates on github</a>.</p>
         )}
       </article>
