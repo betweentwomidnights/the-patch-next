@@ -20,7 +20,8 @@ function Activity({ feed }: { feed: NonNullable<Awaited<ReturnType<typeof getNew
   return (
     <section aria-labelledby="news-activity" className="card sketch-quiet">
       <h2 id="news-activity" className="loud text-3xl">github this week</h2>
-      <p className="label mt-2"><span className="text-paper">■</span> merges <span className="ml-2 text-patch">■</span> releases</p>
+      <p className="label mt-2">{newsDate(dates[0], true)} to {newsDate(feed.checkedThrough, true)}</p>
+      <p className="label mt-1"><span className="text-paper">■</span> merges <span className="ml-2 text-patch">■</span> releases</p>
       <ul className="mt-4 grid grid-cols-7 gap-1.5">
         {dates.map(date => {
           const day = feed.days[date];
@@ -36,7 +37,10 @@ function Activity({ feed }: { feed: NonNullable<Awaited<ReturnType<typeof getNew
                   </>
                 ) : <span className="text-xs text-ash">·</span>}
               </div>
-              <time dateTime={date} className="mt-1 block whitespace-nowrap text-[0.6rem] text-ash">{newsDate(date, true)}</time>
+              <time dateTime={date} className="mt-1 block text-[0.65rem] text-ash">
+                <span aria-hidden="true">{Number(date.slice(-2))}</span>
+                <span className="sr-only">{newsDate(date, true)}</span>
+              </time>
             </li>
           );
         })}
@@ -80,7 +84,7 @@ export default async function NewsPage() {
       {archive.length > 0 && (
         <section aria-labelledby="news-archive" className="mt-10 max-w-prose">
           <h2 id="news-archive" className="loud text-3xl">older updates</h2>
-          <ul className="mt-4 divide-y divide-paper/15">
+          <ul className="mt-4 divide-y divide-paper/20">
             {archive.map(post => (
               <li key={post.date} className="flex flex-wrap items-baseline gap-x-4 py-3">
                 <time className="label w-32 shrink-0" dateTime={post.date}>{newsDate(post.date)}</time>
