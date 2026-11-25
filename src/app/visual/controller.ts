@@ -261,12 +261,18 @@ export class VisualController {
     this.frameNo++;
 
     // ---- canvas size ----
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    // Measure the canvas itself, not the window. On phones the window's height
+    // changes as the browser's toolbars slide in and out, while the canvas
+    // (sized to the largest viewport, see VisualLayer) doesn't. Mapping anchors
+    // through the window's height put the ink in the wrong place, worst at the
+    // bottom of the screen, right where the radio dock is.
+    const box = this.canvas.getBoundingClientRect();
+    const cw = Math.max(1, box.width);
+    const ch = Math.max(1, box.height);
     const dpr =
-      Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(PIXEL_BUDGET / Math.max(1, vw * vh))) * LEVELS[this.level].scale;
-    const W = Math.max(2, Math.round(vw * dpr));
-    const H = Math.max(2, Math.round(vh * dpr));
+      Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(PIXEL_BUDGET / Math.max(1, cw * ch))) * LEVELS[this.level].scale;
+    const W = Math.max(2, Math.round(cw * dpr));
+    const H = Math.max(2, Math.round(ch * dpr));
     if (this.canvas.width !== W || this.canvas.height !== H) {
       this.canvas.width = W;
       this.canvas.height = H;
@@ -285,7 +291,8 @@ export class VisualController {
     this.updateDebug(dt, W, H);
 
     // ---- where ----
-    const placement = pickPlacement(vw, vh);
+    // visibility is judged against what's on screen; drawing is relative to the canvas
+    const placement = pickPlacement(window.innerWidth, window.innerHeight);
     if (!placement) {
       this.fade = Math.max(0, this.fade - dt * 3);
       if (this.fade <= 0) return;
@@ -297,8 +304,8 @@ export class VisualController {
         this.sinceSwitch = 0;
       }
       this.sinceSwitch += dt;
-      const tx = placement.cx * dpr;
-      const ty = placement.cy * dpr;
+      const tx = (placement.cx - box.left) * dpr;
+      const ty = (placement.cy - box.top) * dpr;
       const tr = placement.radius * dpr;
       if (!this.placed) {
         this.cx = tx; this.cy = ty; this.radius = tr;
@@ -372,8 +379,8 @@ export class VisualController {
     this.lastSnare = features.snare;
 
     const pointerFresh = performance.now() - this.pointerSeen < 2500;
-    const px = this.pointerX * dpr;
-    const py = this.pointerY * dpr;
+    const px = (this.pointerX - box.left) * dpr;
+    const py = (this.pointerY - box.top) * dpr;
     const pointerActive = pointerFresh && Math.hypot(px - this.cx, py - this.cy) < this.radius * 1.5;
 
     // docked and silent: half rate is plenty

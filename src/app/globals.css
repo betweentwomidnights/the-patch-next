@@ -80,6 +80,13 @@
 }
 
 @layer components {
+  /* The ink layer is as tall as the largest viewport, so it never resizes as
+     a phone's toolbars slide in and out (100vh first, for browsers without lvh). */
+  .ink-canvas {
+    height: 100vh;
+    height: 100lvh;
+  }
+
   /* ---------------------------------------------------------------- type */
   /* loud: headings, in the pixel face. It has one weight, and it runs small
      for its point size, so headings are set a step bigger than you'd expect. */
