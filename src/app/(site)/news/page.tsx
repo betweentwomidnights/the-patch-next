@@ -18,17 +18,20 @@ function Activity({ feed }: { feed: NonNullable<Awaited<ReturnType<typeof getNew
   }));
 
   return (
-    <section aria-labelledby="news-activity" className="card sketch-quiet">
-      <h2 id="news-activity" className="loud text-3xl">github this week</h2>
-      <p className="label mt-2">{newsDate(dates[0], true)} to {newsDate(feed.checkedThrough, true)}</p>
+    // Phones show this first, so it stays compact there; the sidebar (lg) gets the full card.
+    <section aria-labelledby="news-activity" className="card sketch-quiet !p-4 lg:!p-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 lg:block">
+        <h2 id="news-activity" className="loud text-2xl lg:text-3xl">github this week</h2>
+        <p className="label lg:mt-2">{newsDate(dates[0], true)} to {newsDate(feed.checkedThrough, true)}</p>
+      </div>
       <p className="label mt-1"><span className="text-paper">■</span> merges <span className="ml-2 text-patch">■</span> releases</p>
-      <ul className="mt-4 grid grid-cols-7 gap-1.5">
+      <ul className="mt-3 grid grid-cols-7 gap-1.5 lg:mt-4">
         {dates.map(date => {
           const day = feed.days[date];
           return (
             <li key={date} className="text-center" title={day ? `${day.merges} merges, ${day.releases} releases` : 'unavailable'}>
               <span className="sr-only">{day ? `${day.merges} merges, ${day.releases} releases on ` : 'no counts for '}</span>
-              <div aria-hidden="true" className="relative flex h-16 items-end justify-center gap-[2px] border-b border-paper/20 pb-1">
+              <div aria-hidden="true" className="relative flex h-10 items-end justify-center gap-[2px] border-b border-paper/20 pb-1 lg:h-16">
                 {day ? (
                   <>
                     <span className="w-2 bg-paper/75" style={{ height: `${day.merges / max * 100}%` }} />
@@ -75,6 +78,7 @@ export default async function NewsPage() {
             <h2 className="loud mb-2 text-4xl sm:text-5xl">
               <Link href={`/news/${latest.date}`} className="hover:text-patch">{latest.title}</Link>
             </h2>
+            {latest.summary && <p className="mb-3 max-w-prose text-lg leading-snug text-paper">{latest.summary}</p>}
             {markdown ? <NewsPost date={latest.date} markdown={markdown} diagram={latest.diagram} /> : (
               <p className="mt-4 text-ash">couldn’t load this update. <a className="link" href={`${NEWS_REPO}/blob/main/posts/${latest.date}.md`}>read it on github</a>.</p>
             )}
@@ -82,7 +86,11 @@ export default async function NewsPage() {
         ) : (
           <p className="card max-w-prose">{feed ? 'no updates yet.' : 'couldn’t load the news right now.'}</p>
         )}
-        {feed && <Activity feed={feed} />}
+        {feed && (
+          <div className="order-first lg:order-none">
+            <Activity feed={feed} />
+          </div>
+        )}
       </div>
       {archive.length > 0 && (
         <section aria-labelledby="news-archive" className="mt-10 max-w-prose">
@@ -91,7 +99,10 @@ export default async function NewsPage() {
             {archive.map(post => (
               <li key={post.date} className="flex flex-wrap items-baseline gap-x-4 py-3">
                 <time className="label w-32 shrink-0" dateTime={post.date}>{newsDate(post.date)}</time>
-                <Link href={`/news/${post.date}`} className="link">{post.title}</Link>
+                <div className="min-w-0 flex-1">
+                  <Link href={`/news/${post.date}`} className="link">{post.title}</Link>
+                  {post.summary && <p className="mt-1 text-sm text-ash">{post.summary}</p>}
+                </div>
               </li>
             ))}
           </ul>

@@ -10,7 +10,10 @@ export async function generateMetadata({ params }: Props) {
   const { date } = await params;
   const feed = isNewsDate(date) ? await getNewsFeed() : null;
   const post = feed?.posts.find(entry => entry.date === date);
-  return { title: post ? `${post.title} · the patch` : 'news · the patch' };
+  return {
+    title: post ? `${post.title} · the patch` : 'news · the patch',
+    ...(post?.summary && { description: post.summary }),
+  };
 }
 
 export default async function DatedNewsPage({ params }: Props) {
@@ -27,6 +30,7 @@ export default async function DatedNewsPage({ params }: Props) {
       <Link href="/news" className="link">← news</Link>
       <article className="mt-6">
         <h1 className="loud mb-3 text-5xl sm:text-6xl">{post?.title ?? 'news'}</h1>
+        {post?.summary && <p className="mb-3 text-lg leading-snug text-paper">{post.summary}</p>}
         {markdown ? <NewsPost date={date} markdown={markdown} diagram={post?.diagram} /> : (
           <p className="mt-4 text-ash">couldn’t load this update. <a href={`${NEWS_REPO}/tree/main/posts`} className="link">see the updates on github</a>.</p>
         )}

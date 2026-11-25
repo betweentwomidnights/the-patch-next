@@ -14,6 +14,8 @@ export interface NewsDiagram {
 interface NewsPost {
   date: string;
   title: string;
+  /** One plain sentence anyone could follow, even someone who's never used gary. Optional. */
+  summary?: string;
   diagram?: NewsDiagram;
 }
 
@@ -102,7 +104,9 @@ function parseFeed(raw: unknown): NewsFeed {
       throw new Error('invalid news post');
     }
     postDates.add(post.date);
-    return { date: post.date, title: post.title, diagram: parseDiagram(post.diagram) };
+    // A missing or malformed summary is skipped rather than failing the feed.
+    const summary = isText(post.summary, 200) ? post.summary.trim() : undefined;
+    return { date: post.date, title: post.title, summary, diagram: parseDiagram(post.diagram) };
   });
   if (Object.entries(days).some(([date, day]) => day.status === 'posted' && !postDates.has(date))) {
     throw new Error('missing news post');
