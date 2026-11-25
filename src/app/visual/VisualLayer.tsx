@@ -46,5 +46,5 @@ export default function VisualLayer() {
     };
   }, []);
 
-  return <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none fixed inset-0 z-30 h-full w-full" />;
+  return <canvas ref={canvasRef} aria-hidden="true" className="ink-canvas pointer-events-none fixed left-0 top-0 z-30 w-full" />;
 }
