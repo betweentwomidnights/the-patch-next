@@ -3,7 +3,8 @@ import { unstable_cache } from 'next/cache';
 
 export const NEWS_REPO = 'https://github.com/betweentwomidnights/patch-news';
 const DEFAULT_SOURCE = 'https://raw.githubusercontent.com/betweentwomidnights/patch-news/main';
-const REVALIDATE_SECONDS = 600;
+const POST_REVALIDATE_SECONDS = 600;
+const FEED_REFRESH_MS = 60_000;
 
 export interface NewsDiagram {
   title: string;
@@ -30,6 +31,13 @@ interface NewsFeed {
   days: Record<string, NewsDay>;
   posts: NewsPost[];
 }
+
+let feedCache: {
+  source: string;
+  feed: NewsFeed | null;
+  refreshAfter: number;
+  refreshing?: Promise<NewsFeed | null>;
+} | undefined;
 
 const dateFormat = new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' });
 const shortDateFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
@@ -115,39 +123,50 @@ function parseFeed(raw: unknown): NewsFeed {
   return { checkedThrough, days, posts };
 }
 
-async function fetchNews(source: string, path: string) {
+async function fetchNews(source: string, path: string, headers?: HeadersInit) {
   const response = await fetch(`${source}/${path}`, {
     cache: 'no-store',
+    headers,
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok) throw new Error(`patch news ${path}: HTTP ${response.status}`);
   return response;
 }
 
-// Cache the parsed result so a malformed upstream index cannot replace the last good one.
-const readFeed = unstable_cache(async (source: string) => {
-  const response = await fetchNews(source, 'index.json');
-  return parseFeed(await response.json());
-}, ['patch-news-index'], { revalidate: REVALIDATE_SECONDS });
-
 const readPost = unstable_cache(async (source: string, date: string) => {
   const response = await fetchNews(source, `posts/${date}.md`);
   const markdown = (await response.text()).trim();
   if (!markdown || markdown.length > 8000) throw new Error('invalid news markdown');
   return markdown;
-}, ['patch-news-post'], { revalidate: REVALIDATE_SECONDS });
+}, ['patch-news-post'], { revalidate: POST_REVALIDATE_SECONDS });
 
 function source() {
   return (process.env.PATCH_NEWS_SOURCE_URL || DEFAULT_SOURCE).replace(/\/+$/, '');
 }
 
 export async function getNewsFeed(): Promise<NewsFeed | null> {
-  try {
-    return await readFeed(source());
-  } catch (error) {
-    console.error('could not load patch news index', error);
-    return null;
+  const feedSource = source();
+  if (feedCache?.source !== feedSource) {
+    feedCache = { source: feedSource, feed: null, refreshAfter: 0 };
   }
+  const cache = feedCache;
+  if (cache.refreshing) return cache.refreshing;
+  if (Date.now() < cache.refreshAfter) return cache.feed;
+
+  // Wait for the refresh so the first visitor after an overnight publish sees the new post.
+  cache.refreshing = (async () => {
+    try {
+      const response = await fetchNews(feedSource, 'index.json', { 'Cache-Control': 'no-cache' });
+      cache.feed = parseFeed(await response.json());
+    } catch (error) {
+      console.error('could not load patch news index', error);
+    } finally {
+      cache.refreshAfter = Date.now() + FEED_REFRESH_MS;
+      cache.refreshing = undefined;
+    }
+    return cache.feed;
+  })();
+  return cache.refreshing;
 }
 
 export async function getNewsPost(date: string): Promise<string | null> {
